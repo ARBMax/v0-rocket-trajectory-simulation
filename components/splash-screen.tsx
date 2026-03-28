@@ -1,34 +1,42 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Rocket } from "lucide-react"
+import { Orbit } from "lucide-react"
 
-// Pre-computed star positions to avoid hydration mismatch
-const STARS = [
-  { left: 12, top: 8 }, { left: 45, top: 15 }, { left: 78, top: 5 }, { left: 23, top: 22 },
-  { left: 56, top: 28 }, { left: 89, top: 12 }, { left: 34, top: 35 }, { left: 67, top: 42 },
-  { left: 5, top: 48 }, { left: 91, top: 55 }, { left: 18, top: 62 }, { left: 72, top: 68 },
-  { left: 40, top: 75 }, { left: 85, top: 82 }, { left: 28, top: 88 }, { left: 63, top: 18 },
-  { left: 8, top: 32 }, { left: 52, top: 45 }, { left: 95, top: 38 }, { left: 15, top: 55 },
-  { left: 38, top: 12 }, { left: 82, top: 25 }, { left: 60, top: 58 }, { left: 25, top: 72 },
-  { left: 70, top: 85 }, { left: 3, top: 18 }, { left: 48, top: 65 }, { left: 88, top: 48 },
-  { left: 32, top: 52 }, { left: 75, top: 35 }, { left: 20, top: 42 }, { left: 58, top: 78 },
-  { left: 42, top: 92 }, { left: 10, top: 85 }, { left: 65, top: 8 }, { left: 30, top: 28 },
-  { left: 80, top: 62 }, { left: 50, top: 38 }, { left: 93, top: 72 }, { left: 7, top: 68 },
+const LOADING_MESSAGES = [
+  { text: "OZONE LABS V1.0 — Initializing...", delay: 400 },
+  { text: "Loading trajectory engine...", delay: 800 },
+  { text: "Calibrating sensors...", delay: 1200 },
+  { text: "Flight dynamics module ready", delay: 1600 },
+  { text: "Telemetry subsystem online", delay: 2000 },
+  { text: "All systems nominal", delay: 2400, success: true },
 ]
 
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
-  const [phase, setPhase] = useState<"logo" | "text" | "fadeout">("logo")
+  const [phase, setPhase] = useState<"init" | "loading" | "fadeout">("init")
+  const [visibleMessages, setVisibleMessages] = useState<number>(0)
+  const [progress, setProgress] = useState(0)
 
   useEffect(() => {
-    const timer1 = setTimeout(() => setPhase("text"), 600)
-    const timer2 = setTimeout(() => setPhase("fadeout"), 1800)
-    const timer3 = setTimeout(() => onComplete(), 2400)
+    // Start loading phase
+    const initTimer = setTimeout(() => setPhase("loading"), 300)
+    
+    // Show messages sequentially
+    LOADING_MESSAGES.forEach((msg, index) => {
+      setTimeout(() => {
+        setVisibleMessages(index + 1)
+        setProgress(((index + 1) / LOADING_MESSAGES.length) * 100)
+      }, msg.delay)
+    })
+    
+    // Fade out and complete
+    const fadeTimer = setTimeout(() => setPhase("fadeout"), 3000)
+    const completeTimer = setTimeout(() => onComplete(), 3600)
 
     return () => {
-      clearTimeout(timer1)
-      clearTimeout(timer2)
-      clearTimeout(timer3)
+      clearTimeout(initTimer)
+      clearTimeout(fadeTimer)
+      clearTimeout(completeTimer)
     }
   }, [onComplete])
 
@@ -38,78 +46,125 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
         phase === "fadeout" ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
     >
-      {/* Animated stars in background */}
-      <div className="absolute inset-0 overflow-hidden">
-        {STARS.map((star, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-foreground/30 rounded-full animate-pulse"
-            style={{
-              left: `${star.left}%`,
-              top: `${star.top}%`,
-              animationDelay: `${(i % 5) * 0.4}s`,
-              animationDuration: `${1.5 + (i % 3) * 0.5}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="relative flex flex-col items-center gap-6">
-        {/* Logo */}
+      <div className="flex flex-col items-center gap-8">
+        {/* Orbital Logo */}
         <div
           className={`relative transition-all duration-700 ease-out ${
-            phase === "logo" ? "scale-0 opacity-0" : "scale-100 opacity-100"
+            phase === "init" ? "scale-50 opacity-0" : "scale-100 opacity-100"
           }`}
         >
-          <div className="relative">
+          {/* Outer rotating ring */}
+          <div className="relative h-28 w-28">
             {/* Glow effect */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-20 w-20 rounded-full bg-primary/30 blur-xl animate-pulse" />
+              <div className="h-24 w-24 rounded-full bg-accent/20 blur-2xl" />
             </div>
             
-            {/* Main logo container */}
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
-              <Rocket className="h-8 w-8 text-primary-foreground transform -rotate-45" />
-            </div>
-
-            {/* Rocket trail effect */}
-            <div
-              className={`absolute -bottom-4 left-1/2 -translate-x-1/2 transition-all duration-700 delay-200 ${
-                phase !== "logo" ? "opacity-100 h-8" : "opacity-0 h-0"
-              }`}
+            {/* Rotating ring */}
+            <svg
+              className="absolute inset-0 h-full w-full animate-spin"
+              style={{ animationDuration: "8s" }}
+              viewBox="0 0 100 100"
             >
-              <div className="w-4 h-full bg-gradient-to-t from-transparent via-primary/50 to-primary rounded-full blur-sm" />
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1"
+                className="text-accent/40"
+                strokeDasharray="8 4"
+              />
+            </svg>
+            
+            {/* Orbiting dots */}
+            <div
+              className="absolute inset-0 animate-spin"
+              style={{ animationDuration: "4s" }}
+            >
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 h-2 w-2 rounded-full bg-accent shadow-lg shadow-accent/50" />
+            </div>
+            <div
+              className="absolute inset-0 animate-spin"
+              style={{ animationDuration: "4s", animationDelay: "-1s" }}
+            >
+              <div className="absolute top-1/2 right-0 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-accent/70" />
+            </div>
+            <div
+              className="absolute inset-0 animate-spin"
+              style={{ animationDuration: "4s", animationDelay: "-2.5s" }}
+            >
+              <div className="absolute bottom-2 left-4 h-1.5 w-1.5 rounded-full bg-accent/70" />
+            </div>
+            
+            {/* Center icon container */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-card border border-accent/30">
+                <Orbit className="h-7 w-7 text-accent" />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Text */}
+        {/* Title */}
         <div
-          className={`flex flex-col items-center gap-2 transition-all duration-500 delay-200 ${
-            phase === "logo" ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
+          className={`flex flex-col items-center gap-2 transition-all duration-500 delay-100 ${
+            phase === "init" ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
           }`}
         >
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="text-3xl font-bold tracking-[0.3em] text-accent uppercase">
             Ozone Labs
           </h1>
-          <p className="text-sm text-muted-foreground tracking-wider uppercase">
-            Rocket Trajectory Simulator
+          <p className="text-xs text-muted-foreground tracking-[0.25em] uppercase">
+            Trajectory Simulation & Flight Dynamics
           </p>
         </div>
 
-        {/* Loading indicator */}
+        {/* Terminal Console */}
         <div
-          className={`flex gap-1.5 transition-all duration-500 delay-300 ${
-            phase === "logo" ? "opacity-0" : "opacity-100"
+          className={`w-80 sm:w-96 transition-all duration-500 delay-200 ${
+            phase === "init" ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
           }`}
         >
-          {[0, 1, 2].map((i) => (
+          <div className="rounded-lg bg-card/80 border border-border p-4 font-mono text-xs">
+            <div className="space-y-1 min-h-[120px]">
+              {LOADING_MESSAGES.slice(0, visibleMessages).map((msg, index) => (
+                <div
+                  key={index}
+                  className={`flex items-start gap-2 ${
+                    msg.success ? "text-green-400" : "text-muted-foreground"
+                  }`}
+                >
+                  <span className="text-accent">{"> "}</span>
+                  <span>
+                    {msg.text}
+                    {msg.success && " ✓"}
+                  </span>
+                </div>
+              ))}
+              {visibleMessages < LOADING_MESSAGES.length && (
+                <div className="flex items-center gap-2 text-accent">
+                  <span>{"> "}</span>
+                  <span className="inline-block w-2 h-4 bg-accent animate-pulse" />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div
+          className={`w-80 sm:w-96 transition-all duration-500 delay-300 ${
+            phase === "init" ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          <div className="h-1 w-full rounded-full bg-border overflow-hidden">
             <div
-              key={i}
-              className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce"
-              style={{ animationDelay: `${i * 0.15}s` }}
+              className="h-full bg-accent transition-all duration-300 ease-out"
+              style={{ width: `${progress}%` }}
             />
-          ))}
+          </div>
         </div>
       </div>
     </div>
