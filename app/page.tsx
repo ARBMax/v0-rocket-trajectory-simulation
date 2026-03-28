@@ -9,7 +9,7 @@ import { ComparisonPanel } from "@/components/simulation/comparison-panel"
 import { RocketVisual } from "@/components/simulation/rocket-visual"
 import { Starfield } from "@/components/starfield"
 import { SplashScreen } from "@/components/splash-screen"
-import { Rocket, Info } from "lucide-react"
+import { Rocket, Radio, Clock, Shield } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function RocketSimulator() {
@@ -33,9 +33,10 @@ export default function RocketSimulator() {
 
   const handleSplashComplete = () => {
     setShowSplash(false)
-    // Stagger the content reveal
     setTimeout(() => setContentVisible(true), 100)
   }
+
+  const currentTime = new Date().toISOString().slice(11, 19)
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -47,43 +48,87 @@ export default function RocketSimulator() {
 
       {/* Main Content */}
       <div
-        className={`relative z-10 transition-all duration-700 ${
-          contentVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+        className={`relative z-10 flex flex-col min-h-screen transition-all duration-700 ${
+          contentVisible ? "opacity-100" : "opacity-0"
         }`}
       >
-        {/* Header */}
-        <header className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-10">
-          <div className="mx-auto max-w-7xl px-4 py-4">
+        {/* Mission Control Header */}
+        <header className="border-b border-border/50 bg-card/90 backdrop-blur-md">
+          <div className="mx-auto px-4 py-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary shadow-lg shadow-primary/25">
-                  <Rocket className="h-5 w-5 text-primary-foreground transform -rotate-45" />
+              {/* Logo & Title */}
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
+                  <div className="relative flex h-10 w-10 items-center justify-center rounded border border-primary/50 bg-card">
+                    <Rocket className="h-5 w-5 text-primary transform -rotate-45" />
+                  </div>
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold text-foreground">
+                  <h1 className="text-sm font-mono font-semibold tracking-[0.2em] text-primary uppercase">
                     Ozone Labs
                   </h1>
-                  <p className="text-sm text-muted-foreground">
-                    Rocket Trajectory Simulator
+                  <p className="text-xs font-mono text-muted-foreground tracking-wider">
+                    Trajectory Simulation & Flight Dynamics
                   </p>
                 </div>
               </div>
-              <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
-                <Info className="h-4 w-4" />
-                <span>Educational physics simulation for students</span>
+
+              {/* Status Indicators */}
+              <div className="hidden md:flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-chart-2 animate-pulse" />
+                  <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
+                    Systems Online
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Radio className="h-3.5 w-3.5" />
+                  <span className="text-xs font-mono uppercase tracking-wider">
+                    Telemetry Active
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground font-mono text-xs">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span className="tabular-nums">{currentTime} UTC</span>
+                </div>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="mx-auto max-w-7xl px-4 py-6">
-          <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
+        {/* Mission Status Bar */}
+        <div className="border-b border-border/30 bg-secondary/30 backdrop-blur-sm px-4 py-1.5">
+          <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+            <div className="flex items-center gap-6">
+              <span>Mission Control v1.0</span>
+              <span className="text-primary">|</span>
+              <span>Physics Engine: Active</span>
+              <span className="text-primary">|</span>
+              <span>Simulation: {isRunning ? "Running" : "Standby"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Shield className="h-3 w-3" />
+              <span>Secure Session</span>
+            </div>
+          </div>
+        </div>
+
+        <main className="flex-1 p-4">
+          <div className="grid gap-4 lg:grid-cols-[340px,1fr] h-full">
             {/* Left Sidebar - Controls */}
             <aside
-              className={`space-y-6 transition-all duration-500 delay-100 ${
+              className={`space-y-4 transition-all duration-500 delay-100 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
               }`}
             >
+              {/* Section Label */}
+              <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">
+                <div className="h-px flex-1 bg-border" />
+                <span>Flight Parameters</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
               <ControlPanel
                 params={params}
                 selectedPreset={selectedPreset}
@@ -96,32 +141,45 @@ export default function RocketSimulator() {
                 onSetPlaybackSpeed={setPlaybackSpeed}
               />
 
-              {/* Quick Reference */}
-              <div className="rounded-lg border border-border bg-card/80 backdrop-blur-sm p-4">
-                <h3 className="mb-3 font-medium text-foreground">Quick Physics Reference</h3>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <p>
-                    <strong className="text-foreground">Thrust:</strong> F = T (engine force)
-                  </p>
-                  <p>
-                    <strong className="text-foreground">Gravity:</strong> F = -mg
-                  </p>
-                  <p>
-                    <strong className="text-foreground">Drag:</strong> {"F = -½ρv²CdA"}
-                  </p>
-                  <p>
-                    <strong className="text-foreground">Motion:</strong> F = ma
-                  </p>
+              {/* Quick Reference - Technical Panel */}
+              <div className="rounded border border-border/50 bg-card/50 backdrop-blur-sm p-4">
+                <h3 className="text-[10px] font-mono uppercase tracking-[0.15em] text-primary mb-3">
+                  Physics Reference
+                </h3>
+                <div className="space-y-2 text-xs font-mono text-muted-foreground">
+                  <div className="flex justify-between">
+                    <span className="text-foreground/70">Thrust</span>
+                    <span className="text-primary">F = T</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-foreground/70">Gravity</span>
+                    <span className="text-primary">F = -mg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-foreground/70">Drag</span>
+                    <span className="text-primary">{"F = -½ρv²CdA"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-foreground/70">Motion</span>
+                    <span className="text-primary">F = ma</span>
+                  </div>
                 </div>
               </div>
             </aside>
 
             {/* Main Content Area */}
             <div
-              className={`space-y-6 transition-all duration-500 delay-200 ${
+              className={`space-y-4 transition-all duration-500 delay-200 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
               }`}
             >
+              {/* Section Label */}
+              <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">
+                <div className="h-px flex-1 bg-border" />
+                <span>Live Telemetry</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
               {/* Telemetry Display */}
               <TelemetryDisplay
                 currentState={currentState}
@@ -129,17 +187,44 @@ export default function RocketSimulator() {
                 theoretical={theoretical}
               />
 
+              {/* Section Label */}
+              <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">
+                <div className="h-px flex-1 bg-border" />
+                <span>Visualization</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
               {/* Visualization Tabs */}
               <Tabs defaultValue="visual" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 bg-muted/80 backdrop-blur-sm">
-                  <TabsTrigger value="visual">3D Visual</TabsTrigger>
-                  <TabsTrigger value="altitude">Altitude</TabsTrigger>
-                  <TabsTrigger value="velocity">Velocity</TabsTrigger>
-                  <TabsTrigger value="forces">Forces</TabsTrigger>
+                <TabsList className="w-full justify-start gap-0 bg-transparent border-b border-border/50 rounded-none p-0 h-auto">
+                  <TabsTrigger 
+                    value="visual" 
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
+                  >
+                    3D Visual
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="altitude"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
+                  >
+                    Altitude
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="velocity"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
+                  >
+                    Velocity
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="forces"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
+                  >
+                    Forces
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="visual" className="mt-4">
-                  <div className="h-[450px] rounded-lg overflow-hidden border border-border">
+                  <div className="h-[400px] rounded border border-border/50 overflow-hidden bg-card/30">
                     <RocketVisual currentState={currentState} result={result} />
                   </div>
                 </TabsContent>
@@ -157,6 +242,13 @@ export default function RocketSimulator() {
                 </TabsContent>
               </Tabs>
 
+              {/* Section Label */}
+              <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">
+                <div className="h-px flex-1 bg-border" />
+                <span>Analysis</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
               {/* Comparison Panel */}
               <ComparisonPanel result={result} theoretical={theoretical} />
             </div>
@@ -164,16 +256,21 @@ export default function RocketSimulator() {
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-border bg-card/80 backdrop-blur-md mt-8">
-          <div className="mx-auto max-w-7xl px-4 py-4">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-              <div>
-                Ozone Labs — Educational Physics Tool
+        <footer className="border-t border-border/30 bg-card/50 backdrop-blur-md mt-auto">
+          <div className="px-4 py-3">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                <span>Ozone Labs — Trajectory Simulation System</span>
               </div>
               <div className="flex items-center gap-4">
-                <span>
-                  Simulates: Thrust | Gravity | Atmospheric Drag | Variable Mass
-                </span>
+                <span>Thrust</span>
+                <span className="text-primary">|</span>
+                <span>Gravity</span>
+                <span className="text-primary">|</span>
+                <span>Atmospheric Drag</span>
+                <span className="text-primary">|</span>
+                <span>Variable Mass</span>
               </div>
             </div>
           </div>

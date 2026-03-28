@@ -1,6 +1,5 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
@@ -12,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { RocketParams, ROCKET_PRESETS } from "@/lib/rocket-physics"
-import { Play, Pause, RotateCcw, Rocket } from "lucide-react"
+import { Play, Pause, RotateCcw, Rocket, ChevronRight } from "lucide-react"
 
 interface ControlPanelProps {
   params: RocketParams
@@ -37,25 +36,55 @@ export function ControlPanel({
   onReset,
   onSetPlaybackSpeed,
 }: ControlPanelProps) {
+  const parameterGroups = [
+    {
+      label: "Mass Configuration",
+      params: [
+        { key: "mass" as const, label: "Dry Mass", unit: "kg", min: 0.01, max: 1000, step: 0.01 },
+        { key: "fuelMass" as const, label: "Fuel Mass", unit: "kg", min: 0.01, max: 500, step: 0.01 },
+      ],
+    },
+    {
+      label: "Propulsion",
+      params: [
+        { key: "thrust" as const, label: "Thrust Force", unit: "N", min: 1, max: 100000, step: 1 },
+        { key: "burnRate" as const, label: "Burn Rate", unit: "kg/s", min: 0.001, max: 50, step: 0.001 },
+      ],
+    },
+    {
+      label: "Aerodynamics",
+      params: [
+        { key: "dragCoefficient" as const, label: "Drag Coeff.", unit: "Cd", min: 0.1, max: 1, step: 0.01 },
+        { key: "crossSectionalArea" as const, label: "X-Section", unit: "m²", min: 0.0001, max: 1, step: 0.0001 },
+      ],
+    },
+  ]
+
   return (
-    <Card className="bg-card border-border">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 text-foreground">
-          <Rocket className="h-5 w-5 text-primary" />
-          Rocket Parameters
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="rounded border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
+      {/* Header */}
+      <div className="border-b border-border/50 bg-secondary/30 px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          <Rocket className="h-4 w-4 text-primary" />
+          <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-primary">
+            Flight Parameters
+          </span>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-5">
         {/* Preset Selection */}
         <div className="space-y-2">
-          <Label className="text-muted-foreground">Preset Configuration</Label>
+          <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            Preset Configuration
+          </Label>
           <Select value={selectedPreset} onValueChange={onSelectPreset}>
-            <SelectTrigger className="bg-input border-border text-foreground">
-              <SelectValue placeholder="Select a preset" />
+            <SelectTrigger className="bg-input border-border/50 text-foreground font-mono text-xs h-9">
+              <SelectValue placeholder="Select preset" />
             </SelectTrigger>
-            <SelectContent className="bg-popover border-border">
+            <SelectContent className="bg-popover border-border/50">
               {Object.keys(ROCKET_PRESETS).map((preset) => (
-                <SelectItem key={preset} value={preset}>
+                <SelectItem key={preset} value={preset} className="font-mono text-xs">
                   {preset}
                 </SelectItem>
               ))}
@@ -63,128 +92,83 @@ export function ControlPanel({
           </Select>
         </div>
 
-        {/* Rocket Mass */}
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label className="text-muted-foreground">Dry Mass</Label>
-            <span className="text-sm text-foreground">{params.mass.toFixed(2)} kg</span>
-          </div>
-          <Slider
-            value={[params.mass]}
-            onValueChange={([v]) => onUpdateParam("mass", v)}
-            min={0.01}
-            max={1000}
-            step={0.01}
-            className="cursor-pointer"
-          />
-        </div>
+        {/* Parameter Groups */}
+        {parameterGroups.map((group, groupIndex) => (
+          <div key={groupIndex} className="space-y-3">
+            <div className="flex items-center gap-2">
+              <ChevronRight className="h-3 w-3 text-primary" />
+              <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+                {group.label}
+              </span>
+            </div>
 
-        {/* Fuel Mass */}
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label className="text-muted-foreground">Fuel Mass</Label>
-            <span className="text-sm text-foreground">{params.fuelMass.toFixed(2)} kg</span>
+            {group.params.map((param) => (
+              <div key={param.key} className="space-y-1.5 pl-5">
+                <div className="flex justify-between">
+                  <Label className="text-[10px] font-mono text-foreground/70">
+                    {param.label}
+                  </Label>
+                  <span className="text-[10px] font-mono text-primary tabular-nums">
+                    {typeof params[param.key] === "number"
+                      ? (params[param.key] as number).toFixed(
+                          param.step < 0.01 ? 4 : param.step < 1 ? 3 : 2
+                        )
+                      : params[param.key]}{" "}
+                    <span className="text-muted-foreground">{param.unit}</span>
+                  </span>
+                </div>
+                <Slider
+                  value={[params[param.key] as number]}
+                  onValueChange={([v]) => onUpdateParam(param.key, v)}
+                  min={param.min}
+                  max={param.max}
+                  step={param.step}
+                  className="cursor-pointer"
+                />
+              </div>
+            ))}
           </div>
-          <Slider
-            value={[params.fuelMass]}
-            onValueChange={([v]) => onUpdateParam("fuelMass", v)}
-            min={0.01}
-            max={500}
-            step={0.01}
-            className="cursor-pointer"
-          />
-        </div>
-
-        {/* Thrust */}
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label className="text-muted-foreground">Thrust Force</Label>
-            <span className="text-sm text-foreground">{params.thrust.toFixed(0)} N</span>
-          </div>
-          <Slider
-            value={[params.thrust]}
-            onValueChange={([v]) => onUpdateParam("thrust", v)}
-            min={1}
-            max={100000}
-            step={1}
-            className="cursor-pointer"
-          />
-        </div>
-
-        {/* Burn Rate */}
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label className="text-muted-foreground">Fuel Burn Rate</Label>
-            <span className="text-sm text-foreground">{params.burnRate.toFixed(3)} kg/s</span>
-          </div>
-          <Slider
-            value={[params.burnRate]}
-            onValueChange={([v]) => onUpdateParam("burnRate", v)}
-            min={0.001}
-            max={50}
-            step={0.001}
-            className="cursor-pointer"
-          />
-        </div>
-
-        {/* Drag Coefficient */}
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label className="text-muted-foreground">Drag Coefficient</Label>
-            <span className="text-sm text-foreground">{params.dragCoefficient.toFixed(2)}</span>
-          </div>
-          <Slider
-            value={[params.dragCoefficient]}
-            onValueChange={([v]) => onUpdateParam("dragCoefficient", v)}
-            min={0.1}
-            max={1}
-            step={0.01}
-            className="cursor-pointer"
-          />
-        </div>
-
-        {/* Cross-sectional Area */}
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label className="text-muted-foreground">Cross-sectional Area</Label>
-            <span className="text-sm text-foreground">{params.crossSectionalArea.toFixed(4)} m²</span>
-          </div>
-          <Slider
-            value={[params.crossSectionalArea]}
-            onValueChange={([v]) => onUpdateParam("crossSectionalArea", v)}
-            min={0.0001}
-            max={1}
-            step={0.0001}
-            className="cursor-pointer"
-          />
-        </div>
+        ))}
 
         {/* Playback Speed */}
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <Label className="text-muted-foreground">Playback Speed</Label>
-            <span className="text-sm text-foreground">{playbackSpeed}x</span>
+        <div className="space-y-3 pt-2 border-t border-border/30">
+          <div className="flex items-center gap-2">
+            <ChevronRight className="h-3 w-3 text-primary" />
+            <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
+              Simulation
+            </span>
           </div>
-          <Slider
-            value={[playbackSpeed]}
-            onValueChange={([v]) => onSetPlaybackSpeed(v)}
-            min={0.25}
-            max={10}
-            step={0.25}
-            className="cursor-pointer"
-          />
+          <div className="space-y-1.5 pl-5">
+            <div className="flex justify-between">
+              <Label className="text-[10px] font-mono text-foreground/70">Playback Speed</Label>
+              <span className="text-[10px] font-mono text-primary tabular-nums">{playbackSpeed}x</span>
+            </div>
+            <Slider
+              value={[playbackSpeed]}
+              onValueChange={([v]) => onSetPlaybackSpeed(v)}
+              min={0.25}
+              max={10}
+              step={0.25}
+              className="cursor-pointer"
+            />
+          </div>
         </div>
 
         {/* Control Buttons */}
-        <div className="flex gap-3 pt-2">
+        <div className="flex gap-2 pt-2">
           <Button
             onClick={onTogglePlayback}
-            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+            className={`flex-1 font-mono text-xs uppercase tracking-wider h-10 ${
+              isRunning
+                ? "bg-chart-3/20 border border-chart-3/50 text-chart-3 hover:bg-chart-3/30"
+                : "bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30"
+            }`}
+            variant="ghost"
           >
             {isRunning ? (
               <>
                 <Pause className="mr-2 h-4 w-4" />
-                Pause
+                Hold
               </>
             ) : (
               <>
@@ -194,14 +178,14 @@ export function ControlPanel({
             )}
           </Button>
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={onReset}
-            className="border-border text-foreground hover:bg-muted"
+            className="border border-border/50 text-muted-foreground hover:text-foreground hover:bg-secondary/50 h-10 w-10 p-0"
           >
             <RotateCcw className="h-4 w-4" />
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

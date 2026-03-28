@@ -1,6 +1,5 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SimulationState, SimulationResult } from "@/lib/rocket-physics"
 import { Progress } from "@/components/ui/progress"
 import {
@@ -42,7 +41,7 @@ export function TelemetryDisplay({
   const getPhaseColor = (phase: string) => {
     switch (phase) {
       case "powered":
-        return "text-chart-1"
+        return "text-primary"
       case "coasting":
         return "text-chart-2"
       case "descending":
@@ -54,173 +53,138 @@ export function TelemetryDisplay({
     }
   }
 
+  const getPhaseIndicator = (phase: string) => {
+    switch (phase) {
+      case "powered":
+        return "bg-primary"
+      case "coasting":
+        return "bg-chart-2"
+      case "descending":
+        return "bg-chart-3"
+      case "landed":
+        return "bg-muted-foreground"
+      default:
+        return "bg-foreground"
+    }
+  }
+
+  const metrics = [
+    {
+      icon: ArrowUp,
+      label: "ALT",
+      value: currentState ? formatValue(currentState.height, 1) : "0.0",
+      unit: "m",
+      sub: result ? `MAX ${formatValue(result.maxHeight, 0)}m` : null,
+    },
+    {
+      icon: Gauge,
+      label: "VEL",
+      value: currentState ? formatValue(currentState.velocity, 1) : "0.0",
+      unit: "m/s",
+      sub: result ? `MAX ${formatValue(result.maxVelocity, 0)} m/s` : null,
+    },
+    {
+      icon: TrendingUp,
+      label: "ACC",
+      value: currentState ? formatValue(currentState.acceleration, 1) : "0.0",
+      unit: "m/s²",
+      sub: `G-FORCE ${currentState ? (currentState.acceleration / 9.81).toFixed(2) : "0.00"}`,
+    },
+    {
+      icon: Flame,
+      label: "THR",
+      value: currentState ? formatValue(currentState.thrust, 0) : "0",
+      unit: "N",
+      sub: currentState?.phase === "powered" ? "FIRING" : "OFFLINE",
+      subColor: currentState?.phase === "powered" ? "text-primary" : "text-muted-foreground",
+    },
+    {
+      icon: Fuel,
+      label: "FUEL",
+      value: currentState ? formatValue(currentState.fuelRemaining, 2) : "0.00",
+      unit: "kg",
+      progress: currentState
+        ? (currentState.fuelRemaining / (result?.states[0]?.fuelRemaining ?? 1)) * 100
+        : 100,
+    },
+    {
+      icon: Target,
+      label: "MASS",
+      value: currentState ? formatValue(currentState.mass, 2) : "0.00",
+      unit: "kg",
+      sub: `NET ${currentState ? formatValue(currentState.netForce, 0) : "0"}N`,
+    },
+    {
+      icon: Timer,
+      label: "T+",
+      value: currentState?.time.toFixed(2) ?? "0.00",
+      unit: "s",
+      sub: `BURN ${theoretical.burnTime.toFixed(1)}s`,
+    },
+    {
+      icon: Activity,
+      label: "PHASE",
+      value: currentState?.phase?.toUpperCase() ?? "READY",
+      unit: "",
+      isPhase: true,
+    },
+  ]
+
   return (
-    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      {/* Altitude */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <ArrowUp className="h-4 w-4" />
-            <span className="text-xs uppercase tracking-wide">Altitude</span>
+    <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-8">
+      {metrics.map((metric, i) => (
+        <div
+          key={i}
+          className="relative rounded border border-border/50 bg-card/50 backdrop-blur-sm p-3 group hover:border-primary/30 transition-colors"
+        >
+          {/* Corner Accents */}
+          <div className="absolute top-0 left-0 w-2 h-2 border-l border-t border-primary/30" />
+          <div className="absolute top-0 right-0 w-2 h-2 border-r border-t border-primary/30" />
+          <div className="absolute bottom-0 left-0 w-2 h-2 border-l border-b border-primary/30" />
+          <div className="absolute bottom-0 right-0 w-2 h-2 border-r border-b border-primary/30" />
+
+          <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+            <metric.icon className="h-3 w-3" />
+            <span className="text-[9px] font-mono uppercase tracking-wider">{metric.label}</span>
           </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-foreground">
-              {currentState ? formatValue(currentState.height, 1) : "0"}
+
+          <div className="flex items-baseline gap-1">
+            <span
+              className={`text-lg font-mono font-bold tabular-nums ${
+                metric.isPhase && currentState
+                  ? getPhaseColor(currentState.phase)
+                  : "text-foreground"
+              }`}
+            >
+              {metric.value}
             </span>
-            <span className="text-sm text-muted-foreground">m</span>
+            {metric.unit && (
+              <span className="text-[10px] font-mono text-muted-foreground">{metric.unit}</span>
+            )}
           </div>
-          {result && (
-            <div className="mt-2 text-xs text-muted-foreground">
-              Max: {formatValue(result.maxHeight, 0)}m
+
+          {metric.progress !== undefined && (
+            <div className="mt-1.5">
+              <Progress value={metric.progress} className="h-1" />
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Velocity */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Gauge className="h-4 w-4" />
-            <span className="text-xs uppercase tracking-wide">Velocity</span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-foreground">
-              {currentState ? formatValue(currentState.velocity, 1) : "0"}
-            </span>
-            <span className="text-sm text-muted-foreground">m/s</span>
-          </div>
-          {result && (
-            <div className="mt-2 text-xs text-muted-foreground">
-              Max: {formatValue(result.maxVelocity, 0)} m/s
+          {metric.sub && (
+            <div className={`mt-1 text-[9px] font-mono uppercase tracking-wide ${metric.subColor ?? "text-muted-foreground"}`}>
+              {metric.sub}
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Acceleration */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <TrendingUp className="h-4 w-4" />
-            <span className="text-xs uppercase tracking-wide">Acceleration</span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-foreground">
-              {currentState ? formatValue(currentState.acceleration, 1) : "0"}
-            </span>
-            <span className="text-sm text-muted-foreground">m/s²</span>
-          </div>
-          <div className="mt-2 text-xs text-muted-foreground">
-            G-force: {currentState ? (currentState.acceleration / 9.81).toFixed(2) : "0"}g
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Flight Phase */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Activity className="h-4 w-4" />
-            <span className="text-xs uppercase tracking-wide">Phase</span>
-          </div>
-          <div
-            className={`mt-2 text-2xl font-bold capitalize ${
-              currentState ? getPhaseColor(currentState.phase) : "text-foreground"
-            }`}
-          >
-            {currentState?.phase ?? "Ready"}
-          </div>
-          <div className="mt-2 text-xs text-muted-foreground">
-            Time: {currentState?.time.toFixed(2) ?? "0.00"}s
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Thrust */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Flame className="h-4 w-4" />
-            <span className="text-xs uppercase tracking-wide">Thrust</span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-foreground">
-              {currentState ? formatValue(currentState.thrust, 0) : "0"}
-            </span>
-            <span className="text-sm text-muted-foreground">N</span>
-          </div>
-          <div className="mt-2 text-xs text-muted-foreground">
-            {currentState?.phase === "powered" ? "Engine firing" : "Engine off"}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Fuel */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Fuel className="h-4 w-4" />
-            <span className="text-xs uppercase tracking-wide">Fuel</span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-foreground">
-              {currentState ? formatValue(currentState.fuelRemaining, 2) : "0"}
-            </span>
-            <span className="text-sm text-muted-foreground">kg</span>
-          </div>
-          <div className="mt-2">
-            <Progress
-              value={
-                currentState
-                  ? (currentState.fuelRemaining /
-                      (result?.states[0]?.fuelRemaining ?? 1)) *
-                    100
-                  : 100
-              }
-              className="h-1"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Mass */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Target className="h-4 w-4" />
-            <span className="text-xs uppercase tracking-wide">Mass</span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-foreground">
-              {currentState ? formatValue(currentState.mass, 2) : "0"}
-            </span>
-            <span className="text-sm text-muted-foreground">kg</span>
-          </div>
-          <div className="mt-2 text-xs text-muted-foreground">
-            Net Force: {currentState ? formatValue(currentState.netForce, 0) : "0"}N
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Flight Time */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Timer className="h-4 w-4" />
-            <span className="text-xs uppercase tracking-wide">Flight Time</span>
-          </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-foreground">
-              {result ? result.flightTime.toFixed(1) : "0"}
-            </span>
-            <span className="text-sm text-muted-foreground">s</span>
-          </div>
-          <div className="mt-2 text-xs text-muted-foreground">
-            Burn time: {theoretical.burnTime.toFixed(1)}s
-          </div>
-        </CardContent>
-      </Card>
+          {metric.isPhase && currentState && (
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <div className={`w-1.5 h-1.5 rounded-full ${getPhaseIndicator(currentState.phase)} ${currentState.phase === "powered" ? "animate-pulse" : ""}`} />
+              <span className="text-[9px] font-mono text-muted-foreground uppercase">
+                T+ {currentState.time.toFixed(1)}s
+              </span>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

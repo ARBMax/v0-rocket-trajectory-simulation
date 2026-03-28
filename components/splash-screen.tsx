@@ -57,7 +57,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           <div className="relative h-28 w-28">
             {/* Glow effect */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="h-24 w-24 rounded-full bg-accent/20 blur-2xl" />
+              <div className="h-24 w-24 rounded-full bg-primary/20 blur-2xl" />
             </div>
             
             {/* Rotating ring */}
@@ -73,7 +73,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1"
-                className="text-accent/40"
+                className="text-primary/40"
                 strokeDasharray="8 4"
               />
             </svg>
@@ -83,25 +83,25 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
               className="absolute inset-0 animate-spin"
               style={{ animationDuration: "4s" }}
             >
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 h-2 w-2 rounded-full bg-accent shadow-lg shadow-accent/50" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 h-2 w-2 rounded-full bg-primary shadow-lg shadow-primary/50" />
             </div>
             <div
               className="absolute inset-0 animate-spin"
               style={{ animationDuration: "4s", animationDelay: "-1s" }}
             >
-              <div className="absolute top-1/2 right-0 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-accent/70" />
+              <div className="absolute top-1/2 right-0 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-primary/70" />
             </div>
             <div
               className="absolute inset-0 animate-spin"
               style={{ animationDuration: "4s", animationDelay: "-2.5s" }}
             >
-              <div className="absolute bottom-2 left-4 h-1.5 w-1.5 rounded-full bg-accent/70" />
+              <div className="absolute bottom-2 left-4 h-1.5 w-1.5 rounded-full bg-primary/70" />
             </div>
             
             {/* Center icon container */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-card border border-accent/30">
-                <Orbit className="h-7 w-7 text-accent" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-card border border-primary/30">
+                <Orbit className="h-7 w-7 text-primary" />
               </div>
             </div>
           </div>
@@ -113,7 +113,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             phase === "init" ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
           }`}
         >
-          <h1 className="text-3xl font-bold tracking-[0.3em] text-accent uppercase">
+          <h1 className="text-3xl font-mono font-bold tracking-[0.3em] text-primary uppercase">
             Ozone Labs
           </h1>
           <p className="text-xs text-muted-foreground tracking-[0.25em] uppercase">
@@ -136,7 +136,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                     msg.success ? "text-green-400" : "text-muted-foreground"
                   }`}
                 >
-                  <span className="text-accent">{"> "}</span>
+                  <span className="text-primary">{"> "}</span>
                   <span>
                     {msg.text}
                     {msg.success && " ✓"}
