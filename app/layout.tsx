@@ -7,8 +7,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Rocket Trajectory Simulator',
-  description: 'Physics simulation for rocket motion with thrust and gravitational forces',
+  title: 'Ozone Labs | Rocket Trajectory Simulator',
+  description: 'Physics simulation for rocket motion with thrust and gravitational forces - Ozone Labs',
   generator: 'v0.app',
   icons: {
     icon: [
