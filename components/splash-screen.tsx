@@ -1,26 +1,24 @@
 "use client"
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState } from "react"
 import { Rocket } from "lucide-react"
 
-// Seeded random for consistent star positions
-function seededRandom(seed: number) {
-  const x = Math.sin(seed) * 10000
-  return x - Math.floor(x)
-}
+// Pre-computed star positions to avoid hydration mismatch
+const STARS = [
+  { left: 12, top: 8 }, { left: 45, top: 15 }, { left: 78, top: 5 }, { left: 23, top: 22 },
+  { left: 56, top: 28 }, { left: 89, top: 12 }, { left: 34, top: 35 }, { left: 67, top: 42 },
+  { left: 5, top: 48 }, { left: 91, top: 55 }, { left: 18, top: 62 }, { left: 72, top: 68 },
+  { left: 40, top: 75 }, { left: 85, top: 82 }, { left: 28, top: 88 }, { left: 63, top: 18 },
+  { left: 8, top: 32 }, { left: 52, top: 45 }, { left: 95, top: 38 }, { left: 15, top: 55 },
+  { left: 38, top: 12 }, { left: 82, top: 25 }, { left: 60, top: 58 }, { left: 25, top: 72 },
+  { left: 70, top: 85 }, { left: 3, top: 18 }, { left: 48, top: 65 }, { left: 88, top: 48 },
+  { left: 32, top: 52 }, { left: 75, top: 35 }, { left: 20, top: 42 }, { left: 58, top: 78 },
+  { left: 42, top: 92 }, { left: 10, top: 85 }, { left: 65, top: 8 }, { left: 30, top: 28 },
+  { left: 80, top: 62 }, { left: 50, top: 38 }, { left: 93, top: 72 }, { left: 7, top: 68 },
+]
 
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState<"logo" | "text" | "fadeout">("logo")
-
-  // Generate star positions deterministically to avoid hydration mismatch
-  const stars = useMemo(() => {
-    return Array.from({ length: 50 }).map((_, i) => ({
-      left: seededRandom(i * 3 + 1) * 100,
-      top: seededRandom(i * 3 + 2) * 100,
-      delay: seededRandom(i * 3 + 3) * 2,
-      duration: 1 + seededRandom(i * 3 + 4) * 2,
-    }))
-  }, [])
 
   useEffect(() => {
     const timer1 = setTimeout(() => setPhase("text"), 600)
@@ -42,15 +40,15 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
     >
       {/* Animated stars in background */}
       <div className="absolute inset-0 overflow-hidden">
-        {stars.map((star, i) => (
+        {STARS.map((star, i) => (
           <div
             key={i}
             className="absolute w-1 h-1 bg-foreground/30 rounded-full animate-pulse"
             style={{
               left: `${star.left}%`,
               top: `${star.top}%`,
-              animationDelay: `${star.delay}s`,
-              animationDuration: `${star.duration}s`,
+              animationDelay: `${(i % 5) * 0.4}s`,
+              animationDuration: `${1.5 + (i % 3) * 0.5}s`,
             }}
           />
         ))}
