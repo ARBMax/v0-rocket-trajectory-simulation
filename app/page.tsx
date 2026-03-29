@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRocketSimulation } from "@/hooks/use-rocket-simulation"
 import { ControlPanel } from "@/components/simulation/control-panel"
 import { TrajectoryChart, VelocityChart, ForcesChart } from "@/components/simulation/trajectory-chart"
 import { TelemetryDisplay } from "@/components/simulation/telemetry-display"
 import { ComparisonPanel } from "@/components/simulation/comparison-panel"
 import { RocketVisual } from "@/components/simulation/rocket-visual"
+import { AISuggestionPanel } from "@/components/simulation/ai-suggestion-panel"
 import { Starfield } from "@/components/starfield"
 import { SplashScreen } from "@/components/splash-screen"
 import { Rocket, Radio, Clock, Shield } from "lucide-react"
@@ -15,6 +16,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 export default function RocketSimulator() {
   const [showSplash, setShowSplash] = useState(true)
   const [contentVisible, setContentVisible] = useState(false)
+  const [currentTime, setCurrentTime] = useState("--:--:--")
+
+  // Update time only on client to avoid hydration mismatch
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(new Date().toISOString().slice(11, 19))
+    }
+    updateTime()
+    const interval = setInterval(updateTime, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   const {
     params,
@@ -35,8 +47,6 @@ export default function RocketSimulator() {
     setShowSplash(false)
     setTimeout(() => setContentVisible(true), 100)
   }
-
-  const currentTime = new Date().toISOString().slice(11, 19)
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -249,8 +259,24 @@ export default function RocketSimulator() {
                 <div className="h-px flex-1 bg-border" />
               </div>
 
-              {/* Comparison Panel */}
-              <ComparisonPanel result={result} theoretical={theoretical} />
+              {/* Analysis Grid */}
+              <div className="grid gap-4 lg:grid-cols-2">
+                {/* AI Suggestions */}
+                <AISuggestionPanel 
+                  params={params} 
+                  result={result}
+                  onApplySuggestion={(changes) => {
+                    Object.entries(changes).forEach(([key, value]) => {
+                      if (value !== undefined) {
+                        updateParam(key as keyof typeof params, value as number)
+                      }
+                    })
+                  }}
+                />
+
+                {/* Comparison Panel */}
+                <ComparisonPanel result={result} theoretical={theoretical} />
+              </div>
             </div>
           </div>
         </main>
