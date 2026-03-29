@@ -55,17 +55,11 @@ export function RocketVisual({ currentState, result }: RocketVisualProps) {
   }
   const pColor = phaseColor[phase] ?? "#546e7a"
 
-  // bottomPx = distance from bottom of panel to the bottom of the SVG.
-  // At rocketPosition=0 the rocket sits on the pad (ground layer is h-16 = 64px,
-  // pad surface is ~4px above that, so we offset by 68px).
-  // SVG rendered height is 118px, so bottom=68 puts the rocket nozzle just above the pad.
-  const svgHeight = 118
-  const groundOffset = 68                              // px above panel bottom at launch
-  const travelRange = 500                              // total px the rocket can rise
-  const bottomPx = groundOffset + (rocketPosition / 100) * travelRange
+  // rocket Y: goes from bottom-64px to bottom-80% of panel height
+  const bottomPx = 64 + (rocketPosition / 100) * 380
 
   return (
-    <div className="relative w-full min-h-[620px] h-full rounded-sm overflow-hidden border border-border bg-black">
+    <div className="relative w-full min-h-[480px] h-full rounded-sm overflow-hidden border border-border bg-black">
 
       {/* Deep space gradient */}
       <div
@@ -149,8 +143,8 @@ export function RocketVisual({ currentState, result }: RocketVisualProps) {
         style={{ bottom: `${bottomPx}px` }}
       >
         <svg
-          width="44"
-          height="118"
+          width="60"
+          height="160"
           viewBox="0 0 60 160"
           className="overflow-visible"
           style={{
@@ -423,7 +417,7 @@ export function RocketVisual({ currentState, result }: RocketVisualProps) {
 
         {/* Exhaust smoke cloud when thrusting */}
         {isThrusting && (
-          <div className="absolute top-[109px] left-1/2 -translate-x-1/2 pointer-events-none">
+          <div className="absolute top-[148px] left-1/2 -translate-x-1/2 pointer-events-none">
             {[0,1,2,3,4,5].map((i) => (
               <div
                 key={i}
