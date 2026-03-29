@@ -312,6 +312,8 @@ export default function RocketSimulator() {
                 <span>Atmospheric Drag</span>
                 <span className="text-primary">|</span>
                 <span>Variable Mass</span>
+                <span className="text-primary">|</span>
+                <span className="text-primary/70">Optimized for PC use.</span>
               </div>
             </div>
           </div>
