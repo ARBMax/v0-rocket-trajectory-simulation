@@ -55,11 +55,11 @@ export function RocketVisual({ currentState, result }: RocketVisualProps) {
   }
   const pColor = phaseColor[phase] ?? "#546e7a"
 
-  // rocket Y: goes from bottom-64px to bottom-80% of panel height
-  const bottomPx = 64 + (rocketPosition / 100) * 380
+  // rocket Y: goes from bottom-48px to bottom-86% of panel height (taller travel range)
+  const bottomPx = 48 + (rocketPosition / 100) * 520
 
   return (
-    <div className="relative w-full min-h-[480px] h-full rounded-sm overflow-hidden border border-border bg-black">
+    <div className="relative w-full min-h-[620px] h-full rounded-sm overflow-hidden border border-border bg-black">
 
       {/* Deep space gradient */}
       <div
@@ -143,8 +143,8 @@ export function RocketVisual({ currentState, result }: RocketVisualProps) {
         style={{ bottom: `${bottomPx}px` }}
       >
         <svg
-          width="60"
-          height="160"
+          width="44"
+          height="118"
           viewBox="0 0 60 160"
           className="overflow-visible"
           style={{
@@ -417,7 +417,7 @@ export function RocketVisual({ currentState, result }: RocketVisualProps) {
 
         {/* Exhaust smoke cloud when thrusting */}
         {isThrusting && (
-          <div className="absolute top-[148px] left-1/2 -translate-x-1/2 pointer-events-none">
+          <div className="absolute top-[109px] left-1/2 -translate-x-1/2 pointer-events-none">
             {[0,1,2,3,4,5].map((i) => (
               <div
                 key={i}
