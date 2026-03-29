@@ -55,8 +55,14 @@ export function RocketVisual({ currentState, result }: RocketVisualProps) {
   }
   const pColor = phaseColor[phase] ?? "#546e7a"
 
-  // rocket Y: goes from bottom-48px to bottom-86% of panel height (taller travel range)
-  const bottomPx = 48 + (rocketPosition / 100) * 520
+  // bottomPx = distance from bottom of panel to the bottom of the SVG.
+  // At rocketPosition=0 the rocket sits on the pad (ground layer is h-16 = 64px,
+  // pad surface is ~4px above that, so we offset by 68px).
+  // SVG rendered height is 118px, so bottom=68 puts the rocket nozzle just above the pad.
+  const svgHeight = 118
+  const groundOffset = 68                              // px above panel bottom at launch
+  const travelRange = 500                              // total px the rocket can rise
+  const bottomPx = groundOffset + (rocketPosition / 100) * travelRange
 
   return (
     <div className="relative w-full min-h-[620px] h-full rounded-sm overflow-hidden border border-border bg-black">
