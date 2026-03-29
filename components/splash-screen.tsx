@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Orbit } from "lucide-react"
 
 const LOADING_MESSAGES = [
@@ -16,29 +16,28 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState<"init" | "loading" | "fadeout">("init")
   const [visibleMessages, setVisibleMessages] = useState<number>(0)
   const [progress, setProgress] = useState(0)
+  // Use a ref for onComplete to avoid re-firing the effect if parent re-renders
+  const onCompleteRef = useRef(onComplete)
+  useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
 
   useEffect(() => {
-    // Start loading phase
-    const initTimer = setTimeout(() => setPhase("loading"), 300)
-    
-    // Show messages sequentially
+    const timers: ReturnType<typeof setTimeout>[] = []
+
+    timers.push(setTimeout(() => setPhase("loading"), 300))
+
     LOADING_MESSAGES.forEach((msg, index) => {
-      setTimeout(() => {
+      timers.push(setTimeout(() => {
         setVisibleMessages(index + 1)
         setProgress(((index + 1) / LOADING_MESSAGES.length) * 100)
-      }, msg.delay)
+      }, msg.delay))
     })
-    
-    // Fade out and complete
-    const fadeTimer = setTimeout(() => setPhase("fadeout"), 3000)
-    const completeTimer = setTimeout(() => onComplete(), 3600)
 
-    return () => {
-      clearTimeout(initTimer)
-      clearTimeout(fadeTimer)
-      clearTimeout(completeTimer)
-    }
-  }, [onComplete])
+    timers.push(setTimeout(() => setPhase("fadeout"), 3000))
+    timers.push(setTimeout(() => onCompleteRef.current(), 3600))
+
+    return () => timers.forEach(clearTimeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div
@@ -144,9 +143,9 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
                 </div>
               ))}
               {visibleMessages < LOADING_MESSAGES.length && (
-                <div className="flex items-center gap-2 text-accent">
+                <div className="flex items-center gap-2 text-primary">
                   <span>{"> "}</span>
-                  <span className="inline-block w-2 h-4 bg-accent animate-pulse" />
+                  <span className="inline-block w-2 h-4 bg-primary animate-pulse" />
                 </div>
               )}
             </div>
@@ -160,8 +159,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           }`}
         >
           <div className="h-1 w-full rounded-full bg-border overflow-hidden">
-            <div
-              className="h-full bg-accent transition-all duration-300 ease-out"
+            <div className="h-full bg-primary transition-all duration-300 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
