@@ -12,6 +12,7 @@ import { Starfield } from "@/components/starfield"
 import { SplashScreen } from "@/components/splash-screen"
 import { Rocket, Radio, Clock, Shield } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { FunFactsBanner } from "@/components/fun-facts-banner"
 
 export default function RocketSimulator() {
   const [showSplash, setShowSplash] = useState(true)
@@ -125,6 +126,11 @@ export default function RocketSimulator() {
         </div>
 
         <main className="flex-1 p-4">
+          {/* Fun Facts Banner */}
+          <div className="mb-4">
+            <FunFactsBanner />
+          </div>
+
           <div className="grid gap-4 lg:grid-cols-[340px,1fr] h-full">
             {/* Left Sidebar - Controls */}
             <aside
