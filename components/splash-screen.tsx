@@ -46,15 +46,28 @@ function SpaceCanvas() {
     const STAR_COUNT = 280
     const stars = Array.from({ length: STAR_COUNT }, (_, i) => makeStar(1.618, i))
 
-    // --- Shooting star state ---
-    let shootX = -200, shootY = -200, shootT = 9999
+    // --- Shooting stars (pool of 3) ---
+    type Shooter = { x: number; y: number; vx: number; vy: number; startT: number; active: boolean }
+    const shooters: Shooter[] = Array.from({ length: 3 }, () => ({
+      x: 0, y: 0, vx: 0, vy: 0, startT: -9999, active: false,
+    }))
+
     const fireShooter = () => {
-      shootX = Math.random() * canvas.width * 0.8
-      shootY = Math.random() * canvas.height * 0.4
-      shootT = t
+      const s = shooters.find(s => !s.active) ?? shooters[0]
+      s.x = Math.random() * canvas.width * 0.6 + canvas.width * 0.05
+      s.y = Math.random() * canvas.height * 0.35
+      // angle: roughly 20-40 degrees downward to the right
+      const angle = (Math.random() * 20 + 20) * (Math.PI / 180)
+      const speed = 420 + Math.random() * 200   // px/s equivalent — scaled by t step
+      s.vx = Math.cos(angle) * speed * 0.012
+      s.vy = Math.sin(angle) * speed * 0.012
+      s.startT = t
+      s.active = true
     }
-    const shootInterval = setInterval(fireShooter, 3500)
+    const shootInterval = setInterval(fireShooter, 2000)
+    // Stagger two initial shots so one fires right away, another at 1s
     fireShooter()
+    setTimeout(fireShooter, 900)
 
     // --- Planet (bottom-right, slow parallax) ---
     const planet = { cx: 0.82, cy: 0.78, r: 90, hue: 195 }
@@ -118,32 +131,57 @@ function SpaceCanvas() {
         ctx.fill()
       })
 
-      // Shooting star
-      const dt = t - shootT
-      if (dt < 1.2) {
-        const progress = dt / 1.2
-        const tailLen = 140 * Math.sin(progress * Math.PI)
-        const ex = shootX + tailLen * 2.2 * progress
-        const ey = shootY + tailLen * 0.5 * progress
-        const sx = ex - tailLen
-        const sy = ey - tailLen * 0.35
+      // Shooting stars
+      shooters.forEach((s) => {
+        if (!s.active) return
+        const dt = t - s.startT
+        const dur = 1.6
+        if (dt > dur) { s.active = false; return }
+
+        const progress = dt / dur
+        // Head position travels along vx/vy direction over time
+        const steps = dt / 0.012
+        const headX = s.x + s.vx * steps
+        const headY = s.y + s.vy * steps
+
+        // Tail length grows then shrinks
+        const tailMult = Math.sin(progress * Math.PI)
+        const tailLen = 180 * tailMult
+        const tailX = headX - (s.vx / Math.hypot(s.vx, s.vy)) * tailLen
+        const tailY = headY - (s.vy / Math.hypot(s.vx, s.vy)) * tailLen
+
         const alpha = Math.sin(progress * Math.PI)
-        const grad = ctx.createLinearGradient(sx, sy, ex, ey)
+        const grad = ctx.createLinearGradient(tailX, tailY, headX, headY)
         grad.addColorStop(0, `rgba(100,220,255,0)`)
-        grad.addColorStop(0.6, `rgba(180,240,255,${alpha * 0.6})`)
+        grad.addColorStop(0.4, `rgba(180,240,255,${alpha * 0.4})`)
+        grad.addColorStop(0.8, `rgba(220,248,255,${alpha * 0.85})`)
         grad.addColorStop(1, `rgba(255,255,255,${alpha})`)
+
         ctx.beginPath()
-        ctx.moveTo(sx, sy)
-        ctx.lineTo(ex, ey)
+        ctx.moveTo(tailX, tailY)
+        ctx.lineTo(headX, headY)
         ctx.strokeStyle = grad
-        ctx.lineWidth = 1.5
+        ctx.lineWidth = 1.8
+        ctx.shadowColor = "rgba(120,230,255,0.9)"
+        ctx.shadowBlur = 6
         ctx.stroke()
-        // Head dot
+        ctx.shadowBlur = 0
+
+        // Bright head dot
+        const headGlow = ctx.createRadialGradient(headX, headY, 0, headX, headY, 8)
+        headGlow.addColorStop(0, `rgba(255,255,255,${alpha})`)
+        headGlow.addColorStop(0.4, `rgba(180,240,255,${alpha * 0.5})`)
+        headGlow.addColorStop(1, `rgba(0,0,0,0)`)
         ctx.beginPath()
-        ctx.arc(ex, ey, 2, 0, Math.PI * 2)
+        ctx.arc(headX, headY, 8, 0, Math.PI * 2)
+        ctx.fillStyle = headGlow
+        ctx.fill()
+
+        ctx.beginPath()
+        ctx.arc(headX, headY, 2, 0, Math.PI * 2)
         ctx.fillStyle = `rgba(255,255,255,${alpha})`
         ctx.fill()
-      }
+      })
 
       // Planet
       const px = canvas.width * planet.cx
