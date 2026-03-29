@@ -18,11 +18,16 @@ export default function RocketSimulator() {
   const [showSplash, setShowSplash] = useState(true)
   const [contentVisible, setContentVisible] = useState(false)
   const [currentTime, setCurrentTime] = useState("--:--:--")
+  const [currentDate, setCurrentDate] = useState("--- -- ----")
+  const [timezone, setTimezone] = useState("UTC")
 
   // Update time only on client to avoid hydration mismatch
   useEffect(() => {
     const updateTime = () => {
-      setCurrentTime(new Date().toISOString().slice(11, 19))
+      const now = new Date()
+      setCurrentTime(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }))
+      setCurrentDate(now.toLocaleDateString([], { weekday: "short", day: "2-digit", month: "short", year: "numeric" }).toUpperCase())
+      setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone)
     }
     updateTime()
     const interval = setInterval(updateTime, 1000)
@@ -99,9 +104,13 @@ export default function RocketSimulator() {
                     Telemetry Active
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground font-mono text-xs">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span className="tabular-nums">{currentTime} UTC</span>
+                <div className="flex items-center gap-2 text-muted-foreground font-mono text-xs border-l border-border/50 pl-4">
+                  <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <div className="flex flex-col items-end">
+                    <span className="tabular-nums text-foreground">{currentTime}</span>
+                    <span className="text-[9px] tracking-wider text-muted-foreground">{currentDate}</span>
+                    <span className="text-[9px] tracking-wider text-primary/70">{timezone}</span>
+                  </div>
                 </div>
               </div>
             </div>
