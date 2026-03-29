@@ -8,7 +8,6 @@ interface RocketVisualProps {
   result: SimulationResult | null
 }
 
-// Pre-computed star data to avoid hydration mismatch
 const STARS = [
   { left: 5, top: 3, size: 1.5, opacity: 0.7 }, { left: 12, top: 8, size: 1, opacity: 0.5 },
   { left: 18, top: 15, size: 2, opacity: 0.8 }, { left: 25, top: 5, size: 1, opacity: 0.4 },
@@ -30,6 +29,11 @@ const STARS = [
   { left: 50, top: 20, size: 1, opacity: 0.6 }, { left: 28, top: 68, size: 1.5, opacity: 0.4 },
 ]
 
+function formatHeight(value: number) {
+  if (value >= 1000) return `${(value / 1000).toFixed(2)} km`
+  return `${value.toFixed(0)} m`
+}
+
 export function RocketVisual({ currentState, result }: RocketVisualProps) {
   const maxHeight = result?.maxHeight ?? 1000
 
@@ -38,294 +42,394 @@ export function RocketVisual({ currentState, result }: RocketVisualProps) {
     return Math.min(100, (currentState.height / maxHeight) * 100)
   }, [currentState, maxHeight])
 
-  const flameIntensity = currentState?.thrust ? 1 : 0
+  const isThrusting = !!(currentState?.thrust && currentState.thrust > 0)
+  const isDescending = !!(currentState && currentState.velocity < 0)
+  const phase = currentState?.phase ?? "idle"
 
-  const formatHeight = (value: number) => {
-    if (value >= 1000) {
-      return `${(value / 1000).toFixed(1)}km`
-    }
-    return `${value.toFixed(0)}m`
+  const phaseColor: Record<string, string> = {
+    powered:    "#00e5ff",
+    coasting:   "#69ff74",
+    descending: "#ff4757",
+    landed:     "#ffd32a",
+    idle:       "#546e7a",
   }
+  const pColor = phaseColor[phase] ?? "#546e7a"
 
-  const isDescending = currentState && currentState.velocity < 0
+  // rocket Y: goes from bottom-64px to bottom-80% of panel height
+  const bottomPx = 64 + (rocketPosition / 100) * 380
 
   return (
-    <div className="relative h-full w-full min-h-[400px] rounded-lg overflow-hidden border border-border">
-      {/* Sky gradient background */}
-      <div 
-        className="absolute inset-0 transition-all duration-1000"
+    <div className="relative w-full min-h-[480px] h-full rounded-sm overflow-hidden border border-border bg-black">
+
+      {/* Deep space gradient */}
+      <div
+        className="absolute inset-0 transition-colors duration-1000"
         style={{
-          background: `linear-gradient(to bottom, 
-            hsl(240, 30%, ${4 + rocketPosition * 0.02}%) 0%,
-            hsl(240, 25%, ${8 + rocketPosition * 0.03}%) 30%,
-            hsl(220, 30%, ${12 + rocketPosition * 0.05}%) 60%,
-            hsl(200, 40%, ${15 + rocketPosition * 0.08}%) 100%
-          )`
+          background: `radial-gradient(ellipse at 50% 100%, rgba(0,60,80,${0.3 + rocketPosition * 0.003}) 0%, transparent 70%),
+                       linear-gradient(to bottom, #000005 0%, #00050f 50%, #000c18 100%)`,
         }}
       />
 
       {/* Stars */}
-      <div className="absolute inset-0">
-        {STARS.map((star, i) => (
+      <div className="absolute inset-0 pointer-events-none">
+        {STARS.map((s, i) => (
           <div
             key={i}
             className="absolute rounded-full"
             style={{
-              left: `${star.left}%`,
-              top: `${star.top}%`,
-              width: `${star.size}px`,
-              height: `${star.size}px`,
-              backgroundColor: `rgba(255, 255, 255, ${star.opacity})`,
-              boxShadow: star.size > 1.5 ? `0 0 ${star.size * 2}px rgba(255, 255, 255, 0.5)` : 'none',
+              left: `${s.left}%`,
+              top: `${s.top}%`,
+              width: `${s.size}px`,
+              height: `${s.size}px`,
+              background: `rgba(255,255,255,${s.opacity})`,
+              boxShadow: s.size > 1.5 ? `0 0 ${s.size * 3}px rgba(180,220,255,0.6)` : "none",
               animation: `twinkle ${2 + (i % 3)}s ease-in-out infinite`,
-              animationDelay: `${(i % 5) * 0.5}s`,
+              animationDelay: `${(i % 5) * 0.4}s`,
             }}
           />
         ))}
       </div>
 
-      {/* Atmospheric glow */}
-      <div 
-        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
-        style={{
-          background: 'linear-gradient(to top, rgba(255, 140, 50, 0.1) 0%, transparent 100%)'
-        }}
-      />
-
-      {/* Ground with terrain */}
-      <div className="absolute bottom-0 left-0 right-0 h-16">
-        {/* Ground gradient */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(to top, hsl(30, 20%, 12%) 0%, hsl(30, 15%, 18%) 60%, transparent 100%)'
-          }}
-        />
-        {/* Launch pad */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-3 bg-gradient-to-t from-zinc-700 to-zinc-500 rounded-t-sm" />
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-16 h-1 bg-zinc-600" />
-        {/* Support tower */}
-        <div className="absolute bottom-3 left-[calc(50%-35px)] w-1 h-12 bg-gradient-to-r from-zinc-600 to-zinc-500" />
-        <div className="absolute bottom-3 left-[calc(50%+34px)] w-1 h-12 bg-gradient-to-r from-zinc-500 to-zinc-600" />
-      </div>
-
-      {/* Altitude scale */}
-      <div className="absolute right-3 top-4 bottom-20 flex flex-col justify-between pointer-events-none">
-        {[100, 75, 50, 25, 0].map((percent) => (
-          <div key={percent} className="flex items-center gap-2">
-            <div className="h-px w-6 bg-white/20" />
-            <span className="text-[10px] text-white/50 font-mono">
-              {formatHeight((percent / 100) * maxHeight)}
-            </span>
+      {/* Altitude scale ticks */}
+      <div className="absolute right-3 top-4 bottom-24 flex flex-col justify-between pointer-events-none z-10">
+        {[100, 80, 60, 40, 20, 0].map((pct) => (
+          <div key={pct} className="flex items-center gap-1.5">
+            <div className="h-px w-4 bg-white/15" />
+            <span className="font-mono text-[9px] text-white/35">{formatHeight((pct / 100) * maxHeight)}</span>
           </div>
         ))}
       </div>
 
-      {/* Rocket */}
+      {/* Ground */}
+      <div className="absolute bottom-0 left-0 right-0 h-16 z-20">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, #0a0d10 0%, #0f1419 55%, transparent 100%)",
+          }}
+        />
+        {/* Launch pad base */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-28 h-4 rounded-t-sm"
+          style={{ background: "linear-gradient(to top, #1c2128, #2d3748)" }} />
+        {/* Pad surface lines */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-24 h-px bg-white/10" />
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-1 h-10"
+          style={{ background: "linear-gradient(to top, #263040, transparent)" }} />
+        {/* Support arms */}
+        {[-20, 20].map((offset) => (
+          <div
+            key={offset}
+            className="absolute bottom-4 h-12 w-px"
+            style={{
+              left: `calc(50% + ${offset}px)`,
+              background: "linear-gradient(to top, #2d3748, transparent)",
+            }}
+          />
+        ))}
+        {/* Cross arms */}
+        {[6, 10].map((h) => (
+          <div
+            key={h}
+            className="absolute left-1/2 -translate-x-1/2 h-px w-10 bg-white/10"
+            style={{ bottom: `${h * 4}px` }}
+          />
+        ))}
+      </div>
+
+      {/* ── ROCKET ── */}
       <div
-        className="absolute left-1/2 transform -translate-x-1/2 transition-all duration-75 ease-linear z-10"
-        style={{
-          bottom: `${Math.max(64, 64 + (rocketPosition / 100) * (400 - 120))}px`,
-        }}
+        className="absolute left-1/2 -translate-x-1/2 z-30 transition-[bottom] duration-75 ease-linear"
+        style={{ bottom: `${bottomPx}px` }}
       >
         <svg
-          width="48"
-          height="100"
-          viewBox="0 0 48 100"
-          className="drop-shadow-2xl"
+          width="60"
+          height="160"
+          viewBox="0 0 60 160"
+          className="overflow-visible"
           style={{
             transform: isDescending ? "rotate(180deg)" : "rotate(0deg)",
-            transition: "transform 0.5s ease",
-            filter: 'drop-shadow(0 0 20px rgba(255, 100, 50, 0.3))',
+            transition: "transform 0.6s ease",
+            filter: isThrusting
+              ? "drop-shadow(0 0 18px rgba(0,229,255,0.25)) drop-shadow(0 6px 24px rgba(255,120,30,0.5))"
+              : "drop-shadow(0 0 10px rgba(0,229,255,0.12))",
           }}
         >
           <defs>
-            {/* Main body gradient - metallic look */}
-            <linearGradient id="bodyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#1a1a2e" />
-              <stop offset="15%" stopColor="#3d3d5c" />
-              <stop offset="35%" stopColor="#e8e8e8" />
-              <stop offset="50%" stopColor="#ffffff" />
-              <stop offset="65%" stopColor="#e8e8e8" />
-              <stop offset="85%" stopColor="#3d3d5c" />
-              <stop offset="100%" stopColor="#1a1a2e" />
+            {/* Fairing / upper body */}
+            <linearGradient id="rv-fairing" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor="#101820" />
+              <stop offset="18%"  stopColor="#1e2d40" />
+              <stop offset="40%"  stopColor="#c8d8e8" />
+              <stop offset="50%"  stopColor="#e8f4ff" />
+              <stop offset="62%"  stopColor="#b0c8d8" />
+              <stop offset="82%"  stopColor="#1e2d40" />
+              <stop offset="100%" stopColor="#101820" />
             </linearGradient>
 
-            {/* Nose cone gradient */}
-            <linearGradient id="noseGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#8b1a1a" />
-              <stop offset="30%" stopColor="#d63031" />
-              <stop offset="50%" stopColor="#ff4757" />
-              <stop offset="70%" stopColor="#d63031" />
-              <stop offset="100%" stopColor="#8b1a1a" />
+            {/* First stage body */}
+            <linearGradient id="rv-stage1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor="#0d1520" />
+              <stop offset="12%"  stopColor="#182535" />
+              <stop offset="35%"  stopColor="#a0b8c8" />
+              <stop offset="50%"  stopColor="#d0e4f0" />
+              <stop offset="65%"  stopColor="#8098a8" />
+              <stop offset="88%"  stopColor="#182535" />
+              <stop offset="100%" stopColor="#0d1520" />
             </linearGradient>
 
-            {/* Fin gradient */}
-            <linearGradient id="finGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#2d2d44" />
-              <stop offset="50%" stopColor="#4a4a6a" />
-              <stop offset="100%" stopColor="#1a1a2e" />
+            {/* Interstage band */}
+            <linearGradient id="rv-band" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor="#080e14" />
+              <stop offset="40%"  stopColor="#1a2840" />
+              <stop offset="50%"  stopColor="#243550" />
+              <stop offset="60%"  stopColor="#1a2840" />
+              <stop offset="100%" stopColor="#080e14" />
             </linearGradient>
 
-            {/* Window reflection */}
-            <radialGradient id="windowGradient" cx="30%" cy="30%" r="60%">
-              <stop offset="0%" stopColor="#87ceeb" />
-              <stop offset="40%" stopColor="#4a90a4" />
-              <stop offset="100%" stopColor="#1e3a4c" />
-            </radialGradient>
-
-            {/* Flame gradients */}
-            <radialGradient id="outerFlame" cx="50%" cy="0%" r="100%">
-              <stop offset="0%" stopColor="#ff6b35" />
-              <stop offset="40%" stopColor="#ff4500" />
-              <stop offset="70%" stopColor="#cc0000" />
-              <stop offset="100%" stopColor="#660000" stopOpacity="0" />
-            </radialGradient>
-
-            <radialGradient id="midFlame" cx="50%" cy="0%" r="80%">
-              <stop offset="0%" stopColor="#ffa500" />
-              <stop offset="50%" stopColor="#ff6600" />
-              <stop offset="100%" stopColor="#ff3300" stopOpacity="0.5" />
-            </radialGradient>
-
-            <radialGradient id="innerFlame" cx="50%" cy="20%" r="60%">
-              <stop offset="0%" stopColor="#ffffff" />
-              <stop offset="30%" stopColor="#ffffcc" />
-              <stop offset="60%" stopColor="#ffcc00" />
-              <stop offset="100%" stopColor="#ff9900" />
-            </radialGradient>
-
-            {/* Engine glow */}
-            <radialGradient id="engineGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#ff6b35" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#ff6b35" stopOpacity="0" />
-            </radialGradient>
-
-            {/* Body stripe */}
-            <linearGradient id="stripeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#1a1a2e" />
-              <stop offset="50%" stopColor="#2d2d44" />
-              <stop offset="100%" stopColor="#1a1a2e" />
+            {/* Fins */}
+            <linearGradient id="rv-fin" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"   stopColor="#1e2d3d" />
+              <stop offset="50%"  stopColor="#0d1a28" />
+              <stop offset="100%" stopColor="#060e18" />
             </linearGradient>
+
+            {/* Thrust puck */}
+            <linearGradient id="rv-puck" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor="#080c10" />
+              <stop offset="45%"  stopColor="#2a3848" />
+              <stop offset="50%"  stopColor="#3a4858" />
+              <stop offset="55%"  stopColor="#2a3848" />
+              <stop offset="100%" stopColor="#080c10" />
+            </linearGradient>
+
+            {/* Engine bell */}
+            <linearGradient id="rv-bell" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor="#060a0d" />
+              <stop offset="30%"  stopColor="#1a2530" />
+              <stop offset="50%"  stopColor="#253540" />
+              <stop offset="70%"  stopColor="#1a2530" />
+              <stop offset="100%" stopColor="#060a0d" />
+            </linearGradient>
+
+            {/* Porthole window */}
+            <radialGradient id="rv-window" cx="35%" cy="35%" r="65%">
+              <stop offset="0%"   stopColor="#a8e4f8" />
+              <stop offset="45%"  stopColor="#2a7090" />
+              <stop offset="100%" stopColor="#0a2030" />
+            </radialGradient>
+
+            {/* Cyan stripe */}
+            <linearGradient id="rv-cyan" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stopColor="transparent" />
+              <stop offset="20%"  stopColor="#00b8d4" />
+              <stop offset="50%"  stopColor="#00e5ff" />
+              <stop offset="80%"  stopColor="#00b8d4" />
+              <stop offset="100%" stopColor="transparent" />
+            </linearGradient>
+
+            {/* Flame outer */}
+            <radialGradient id="rv-f-outer" cx="50%" cy="5%" r="95%">
+              <stop offset="0%"   stopColor="#ff8c00" stopOpacity="0.9" />
+              <stop offset="35%"  stopColor="#ff4500" stopOpacity="0.8" />
+              <stop offset="70%"  stopColor="#cc1100" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#550000" stopOpacity="0" />
+            </radialGradient>
+            {/* Flame mid */}
+            <radialGradient id="rv-f-mid" cx="50%" cy="5%" r="80%">
+              <stop offset="0%"   stopColor="#ffc200" />
+              <stop offset="50%"  stopColor="#ff6600" />
+              <stop offset="100%" stopColor="#ff2200" stopOpacity="0" />
+            </radialGradient>
+            {/* Flame inner */}
+            <radialGradient id="rv-f-core" cx="50%" cy="20%" r="60%">
+              <stop offset="0%"   stopColor="#ffffff" />
+              <stop offset="25%"  stopColor="#ffffc0" />
+              <stop offset="60%"  stopColor="#ffcc00" />
+              <stop offset="100%" stopColor="#ff8800" stopOpacity="0.5" />
+            </radialGradient>
+            {/* Engine ambient glow */}
+            <radialGradient id="rv-glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"   stopColor="#ff6030" stopOpacity="0.7" />
+              <stop offset="100%" stopColor="#ff6030" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="rv-exhaust-glow" cx="50%" cy="0%" r="100%">
+              <stop offset="0%"   stopColor="#00e5ff" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#00e5ff" stopOpacity="0" />
+            </radialGradient>
           </defs>
 
-          {/* Flame effect (when thrusting) */}
-          {flameIntensity > 0 && (
-            <g className="animate-flicker">
-              {/* Outer flame */}
-              <ellipse cx="24" cy="88" rx="10" ry="18" fill="url(#outerFlame)" opacity="0.8">
-                <animate attributeName="ry" values="18;22;16;20;18" dur="0.15s" repeatCount="indefinite" />
-                <animate attributeName="rx" values="10;12;9;11;10" dur="0.12s" repeatCount="indefinite" />
+          {/* === PLUME / FLAME === */}
+          {isThrusting && (
+            <g>
+              {/* ambient engine glow circle */}
+              <ellipse cx="30" cy="148" rx="16" ry="8" fill="url(#rv-glow)" />
+              {/* outer plume */}
+              <ellipse cx="30" cy="160" rx="13" ry="26" fill="url(#rv-f-outer)">
+                <animate attributeName="ry" values="26;32;22;28;26" dur="0.18s" repeatCount="indefinite" />
+                <animate attributeName="rx" values="13;15;11;14;13" dur="0.14s" repeatCount="indefinite" />
               </ellipse>
-              
-              {/* Mid flame */}
-              <ellipse cx="24" cy="85" rx="7" ry="14" fill="url(#midFlame)" opacity="0.9">
-                <animate attributeName="ry" values="14;16;12;15;14" dur="0.1s" repeatCount="indefinite" />
+              {/* mid plume */}
+              <ellipse cx="30" cy="157" rx="9" ry="20" fill="url(#rv-f-mid)">
+                <animate attributeName="ry" values="20;24;17;22;20" dur="0.12s" repeatCount="indefinite" />
               </ellipse>
-              
-              {/* Inner flame core */}
-              <ellipse cx="24" cy="82" rx="4" ry="10" fill="url(#innerFlame)">
-                <animate attributeName="ry" values="10;12;9;11;10" dur="0.08s" repeatCount="indefinite" />
+              {/* inner core */}
+              <ellipse cx="30" cy="153" rx="5" ry="14" fill="url(#rv-f-core)">
+                <animate attributeName="ry" values="14;16;12;15;14" dur="0.09s" repeatCount="indefinite" />
               </ellipse>
-
-              {/* Bright core */}
-              <ellipse cx="24" cy="78" rx="2" ry="5" fill="#ffffff" opacity="0.95">
-                <animate attributeName="ry" values="5;6;4;5" dur="0.06s" repeatCount="indefinite" />
+              {/* white hot center */}
+              <ellipse cx="30" cy="150" rx="2.5" ry="7" fill="white" opacity="0.95">
+                <animate attributeName="ry" values="7;9;6;8;7" dur="0.07s" repeatCount="indefinite" />
               </ellipse>
-
-              {/* Engine glow */}
-              <circle cx="24" cy="72" r="8" fill="url(#engineGlow)" />
             </g>
           )}
 
-          {/* Left fin */}
-          <path 
-            d="M14 60 L4 78 L8 78 L14 68 Z" 
-            fill="url(#finGradient)"
-            stroke="#1a1a2e"
-            strokeWidth="0.5"
+          {/* === GRID FINS (folded flat when ascending, extended icon when descending) === */}
+          {/* Left grid fin */}
+          <g opacity={isDescending ? 1 : 0.55}>
+            <rect x="5" y="88" width="10" height="14" rx="1" fill="url(#rv-fin)" stroke="#0d1e2e" strokeWidth="0.4" />
+            <line x1="5" y1="91" x2="15" y2="91" stroke="#1a3040" strokeWidth="0.5"/>
+            <line x1="5" y1="95" x2="15" y2="95" stroke="#1a3040" strokeWidth="0.5"/>
+            <line x1="5" y1="99" x2="15" y2="99" stroke="#1a3040" strokeWidth="0.5"/>
+            <line x1="8"  y1="88" x2="8"  y2="102" stroke="#1a3040" strokeWidth="0.5"/>
+            <line x1="12" y1="88" x2="12" y2="102" stroke="#1a3040" strokeWidth="0.5"/>
+          </g>
+          {/* Right grid fin */}
+          <g opacity={isDescending ? 1 : 0.55}>
+            <rect x="45" y="88" width="10" height="14" rx="1" fill="url(#rv-fin)" stroke="#0d1e2e" strokeWidth="0.4" />
+            <line x1="45" y1="91" x2="55" y2="91" stroke="#1a3040" strokeWidth="0.5"/>
+            <line x1="45" y1="95" x2="55" y2="95" stroke="#1a3040" strokeWidth="0.5"/>
+            <line x1="45" y1="99" x2="55" y2="99" stroke="#1a3040" strokeWidth="0.5"/>
+            <line x1="48" y1="88" x2="48" y2="102" stroke="#1a3040" strokeWidth="0.5"/>
+            <line x1="52" y1="88" x2="52" y2="102" stroke="#1a3040" strokeWidth="0.5"/>
+          </g>
+
+          {/* === LANDING LEGS (deployed only when descending/landing) === */}
+          {isDescending && (
+            <g>
+              <path d="M19 142 L8 158" stroke="#1e2d3d" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M41 142 L52 158" stroke="#1e2d3d" strokeWidth="2.5" strokeLinecap="round"/>
+              <path d="M8 158 L14 158" stroke="#2a3d50" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M46 158 L52 158" stroke="#2a3d50" strokeWidth="2" strokeLinecap="round"/>
+            </g>
+          )}
+
+          {/* === BOOSTER FINS (lower stage) === */}
+          {/* Left */}
+          <path d="M19 130 L7 152 L13 152 L19 138 Z" fill="url(#rv-fin)" stroke="#0a1520" strokeWidth="0.5" />
+          <path d="M19 132 L10 148 L12 148 L19 136 Z" fill="rgba(255,255,255,0.05)" />
+          {/* Right */}
+          <path d="M41 130 L53 152 L47 152 L41 138 Z" fill="url(#rv-fin)" stroke="#0a1520" strokeWidth="0.5" />
+          <path d="M41 132 L50 148 L48 148 L41 136 Z" fill="rgba(255,255,255,0.05)" />
+
+          {/* === ENGINE CLUSTER / THRUST PUCK === */}
+          <rect x="15" y="138" width="30" height="8" rx="2" fill="url(#rv-puck)" />
+          {/* 3 engine bell nozzles */}
+          {[20, 30, 40].map((cx) => (
+            <g key={cx}>
+              <path
+                d={`M${cx - 4} 146 L${cx - 5.5} 154 L${cx + 5.5} 154 L${cx + 4} 146 Z`}
+                fill="url(#rv-bell)"
+                stroke="#050a0f"
+                strokeWidth="0.4"
+              />
+              <ellipse cx={cx} cy="154" rx="5.5" ry="1.5" fill="#040810" />
+              {isThrusting && (
+                <ellipse cx={cx} cy="154" rx="4" ry="1.2" fill="#ff6030" opacity="0.7">
+                  <animate attributeName="opacity" values="0.7;1;0.5;0.9;0.7" dur="0.1s" repeatCount="indefinite" />
+                </ellipse>
+              )}
+            </g>
+          ))}
+
+          {/* === FIRST STAGE BODY === */}
+          <rect x="19" y="80" width="22" height="60" fill="url(#rv-stage1)" />
+          {/* Panel seams */}
+          {[96, 110, 124].map((y) => (
+            <line key={y} x1="19" y1={y} x2="41" y2={y} stroke="#0d1a25" strokeWidth="0.6" />
+          ))}
+          {/* Body center line */}
+          <line x1="30" y1="80" x2="30" y2="138" stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" />
+          {/* Edge light left */}
+          <rect x="19" y="80" width="1.5" height="60" fill="rgba(255,255,255,0.08)" />
+          {/* Edge shadow right */}
+          <rect x="39.5" y="80" width="1.5" height="60" fill="rgba(0,0,0,0.35)" />
+
+          {/* OZONE LABS logo text on stage 1 */}
+          <text x="30" y="115" textAnchor="middle" fontSize="3.5" fill="rgba(0,229,255,0.55)" fontFamily="monospace" letterSpacing="0.8">OZONE</text>
+          <text x="30" y="120" textAnchor="middle" fontSize="3.5" fill="rgba(0,229,255,0.55)" fontFamily="monospace" letterSpacing="0.8">LABS</text>
+
+          {/* === INTERSTAGE BAND === */}
+          <rect x="17" y="75" width="26" height="7" rx="0.5" fill="url(#rv-band)" />
+          {/* Cyan accent stripe */}
+          <rect x="17" y="77.5" width="26" height="1" fill="url(#rv-cyan)" opacity="0.7" />
+          <rect x="17" y="79.5" width="26" height="0.5" fill="url(#rv-cyan)" opacity="0.35" />
+
+          {/* === SECOND STAGE / FAIRING BODY === */}
+          <rect x="19" y="38" width="22" height="39" fill="url(#rv-fairing)" />
+          {/* Panel seams */}
+          {[52, 63].map((y) => (
+            <line key={y} x1="19" y1={y} x2="41" y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="0.5" />
+          ))}
+          {/* Highlight left */}
+          <rect x="19" y="38" width="1.5" height="39" fill="rgba(255,255,255,0.07)" />
+          {/* Shadow right */}
+          <rect x="39.5" y="38" width="1.5" height="39" fill="rgba(0,0,0,0.28)" />
+
+          {/* Stage 2 cyan stripe */}
+          <rect x="19" y="54" width="22" height="1" fill="url(#rv-cyan)" opacity="0.5" />
+
+          {/* === NOSE CONE / FAIRING === */}
+          {/* Main cone shape */}
+          <path
+            d="M30 3 C26 10 20 22 19 38 L41 38 C40 22 34 10 30 3 Z"
+            fill="url(#rv-fairing)"
           />
-          {/* Fin highlight */}
-          <path d="M13 62 L7 75 L8 75 L14 64 Z" fill="rgba(255,255,255,0.1)" />
-
-          {/* Right fin */}
-          <path 
-            d="M34 60 L44 78 L40 78 L34 68 Z" 
-            fill="url(#finGradient)"
-            stroke="#1a1a2e"
-            strokeWidth="0.5"
+          {/* Nose cone highlight */}
+          <path
+            d="M30 5 C27 11 22 22 20.5 37 L23 37 C24 24 28 12 30 7 Z"
+            fill="rgba(255,255,255,0.12)"
           />
-          {/* Fin highlight */}
-          <path d="M35 62 L41 75 L40 75 L34 64 Z" fill="rgba(255,255,255,0.1)" />
+          {/* Tip */}
+          <circle cx="30" cy="4" r="1.5" fill="#c8d8e8" />
 
-          {/* Center fin (back) */}
-          <path 
-            d="M22 65 L24 80 L26 65 Z" 
-            fill="#2d2d44"
-            stroke="#1a1a2e"
-            strokeWidth="0.5"
-          />
+          {/* Nose taper seam lines */}
+          <path d="M30 3 L19 38" stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" />
+          <path d="M30 3 L41 38" stroke="rgba(0,0,0,0.2)" strokeWidth="0.5" />
 
-          {/* Engine nozzle */}
-          <path 
-            d="M18 68 L16 75 L32 75 L30 68 Z" 
-            fill="#2d2d44"
-            stroke="#1a1a2e"
-            strokeWidth="0.5"
-          />
-          <ellipse cx="24" cy="75" rx="8" ry="2" fill="#1a1a2e" />
+          {/* === PORTHOLE WINDOW === */}
+          <circle cx="30" cy="47" r="4.5" fill="#060f18" />
+          <circle cx="30" cy="47" r="3.8" fill="url(#rv-window)" />
+          <circle cx="30" cy="47" r="3.8" fill="none" stroke="rgba(0,229,255,0.35)" strokeWidth="0.6" />
+          {/* Window reflection glint */}
+          <ellipse cx="28.5" cy="45.5" rx="1.5" ry="1" fill="rgba(255,255,255,0.45)" />
+          <circle cx="31" cy="48.5" r="0.6" fill="rgba(255,255,255,0.15)" />
 
-          {/* Main body */}
-          <rect x="14" y="18" width="20" height="50" rx="1" fill="url(#bodyGradient)" />
-          
-          {/* Body panel lines */}
-          <line x1="14" y1="35" x2="34" y2="35" stroke="#3d3d5c" strokeWidth="0.5" />
-          <line x1="14" y1="52" x2="34" y2="52" stroke="#3d3d5c" strokeWidth="0.5" />
+          {/* === CYAN ACCENT RING at fairing base === */}
+          <rect x="19" y="37" width="22" height="1.5" fill="url(#rv-cyan)" opacity="0.8" />
 
-          {/* Stripe band */}
-          <rect x="14" y="40" width="20" height="6" fill="url(#stripeGradient)" />
-          <rect x="14" y="41" width="20" height="1" fill="rgba(255,255,255,0.2)" />
+          {/* === ATTITUDE THRUSTERS (small nubs on interstage) === */}
+          {[[-3, 73], [3, 73]].map(([dx, y], i) => (
+            <rect key={i} x={30 + dx - 1} y={y} width="2" height="3" rx="0.5" fill="#101c28" />
+          ))}
 
-          {/* Window outer ring */}
-          <circle cx="24" cy="28" r="6" fill="#1a1a2e" />
-          {/* Window */}
-          <circle cx="24" cy="28" r="5" fill="url(#windowGradient)" />
-          {/* Window reflection */}
-          <ellipse cx="22" cy="26" rx="2" ry="1.5" fill="rgba(255,255,255,0.4)" />
-
-          {/* Nose cone */}
-          <path 
-            d="M24 2 C24 2 14 15 14 18 L34 18 C34 15 24 2 24 2 Z" 
-            fill="url(#noseGradient)"
-          />
-          {/* Nose highlight */}
-          <path 
-            d="M24 4 C24 4 18 13 17 17 L20 17 C21 14 24 6 24 4 Z" 
-            fill="rgba(255,255,255,0.25)"
-          />
-          
-          {/* Nose tip */}
-          <ellipse cx="24" cy="4" rx="1.5" ry="1" fill="#ff6b6b" />
-
-          {/* Body highlight (left edge) */}
-          <rect x="15" y="18" width="2" height="50" fill="rgba(255,255,255,0.15)" />
         </svg>
 
-        {/* Exhaust smoke during powered flight */}
-        {flameIntensity > 0 && (
-          <div className="absolute top-[85px] left-1/2 -translate-x-1/2 pointer-events-none">
-            {Array.from({ length: 8 }).map((_, i) => (
+        {/* Exhaust smoke cloud when thrusting */}
+        {isThrusting && (
+          <div className="absolute top-[148px] left-1/2 -translate-x-1/2 pointer-events-none">
+            {[0,1,2,3,4,5].map((i) => (
               <div
                 key={i}
-                className="absolute rounded-full opacity-30"
+                className="absolute rounded-full"
                 style={{
-                  width: `${12 + i * 6}px`,
-                  height: `${12 + i * 6}px`,
-                  background: `radial-gradient(circle, rgba(180, 180, 180, ${0.4 - i * 0.04}) 0%, transparent 70%)`,
-                  top: `${i * 20}px`,
-                  left: `${-6 - i * 3}px`,
-                  animation: `smoke ${0.8 + i * 0.1}s ease-out infinite`,
-                  animationDelay: `${i * 80}ms`,
+                  width: `${14 + i * 8}px`,
+                  height: `${14 + i * 8}px`,
+                  background: `radial-gradient(circle, rgba(160,170,180,${0.25 - i * 0.035}) 0%, transparent 70%)`,
+                  top: `${i * 22}px`,
+                  left: `${-(7 + i * 4)}px`,
+                  animation: `smoke 1s ease-out infinite`,
+                  animationDelay: `${i * 120}ms`,
                 }}
               />
             ))}
@@ -333,68 +437,53 @@ export function RocketVisual({ currentState, result }: RocketVisualProps) {
         )}
       </div>
 
-      {/* HUD Overlay */}
-      <div className="absolute top-3 left-3 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 p-3">
-        <div className="text-[10px] uppercase tracking-wider text-white/50 mb-1">Altitude</div>
-        <div className="text-2xl font-bold text-white font-mono">
-          {currentState ? formatHeight(currentState.height) : "0m"}
+      {/* HUD — top left telemetry */}
+      <div className="absolute top-3 left-3 z-40 rounded-sm bg-black/70 backdrop-blur-sm border border-white/8 p-3 min-w-[130px]">
+        <div className="text-[9px] font-mono uppercase tracking-[0.18em] text-white/40 mb-0.5">Altitude</div>
+        <div className="text-2xl font-bold font-mono text-white leading-none">
+          {currentState ? formatHeight(currentState.height) : "0 m"}
         </div>
-        <div className="flex items-center gap-2 mt-2">
-          <div className="text-[10px] uppercase tracking-wider text-white/50">Velocity</div>
-          <div className="text-sm font-mono text-white/80">
-            {currentState ? `${currentState.velocity.toFixed(1)} m/s` : "0 m/s"}
+        <div className="mt-2 flex items-center gap-3">
+          <div>
+            <div className="text-[9px] font-mono uppercase tracking-wider text-white/40">Vel</div>
+            <div className="text-xs font-mono text-white/80">
+              {currentState ? `${Math.abs(currentState.velocity).toFixed(1)} m/s` : "—"}
+            </div>
+          </div>
+          <div>
+            <div className="text-[9px] font-mono uppercase tracking-wider text-white/40">Acc</div>
+            <div className="text-xs font-mono text-white/80">
+              {currentState ? `${currentState.acceleration.toFixed(1)} m/s²` : "—"}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Phase indicator */}
-      {currentState && (
-        <div 
-          className="absolute bottom-20 left-3 rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider backdrop-blur-sm border"
-          style={{
-            backgroundColor:
-              currentState.phase === "powered"
-                ? "rgba(255, 107, 53, 0.2)"
-                : currentState.phase === "coasting"
-                ? "rgba(74, 144, 226, 0.2)"
-                : currentState.phase === "descending"
-                ? "rgba(255, 71, 87, 0.2)"
-                : "rgba(128, 128, 128, 0.2)",
-            borderColor:
-              currentState.phase === "powered"
-                ? "rgba(255, 107, 53, 0.5)"
-                : currentState.phase === "coasting"
-                ? "rgba(74, 144, 226, 0.5)"
-                : currentState.phase === "descending"
-                ? "rgba(255, 71, 87, 0.5)"
-                : "rgba(128, 128, 128, 0.5)",
-            color:
-              currentState.phase === "powered"
-                ? "#ff6b35"
-                : currentState.phase === "coasting"
-                ? "#4a90e2"
-                : currentState.phase === "descending"
-                ? "#ff4757"
-                : "#808080",
-          }}
-        >
-          {currentState.phase}
-        </div>
-      )}
+      {/* Flight phase badge */}
+      <div
+        className="absolute bottom-20 left-3 z-40 rounded-sm px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-[0.15em] border backdrop-blur-sm"
+        style={{
+          color: pColor,
+          borderColor: `${pColor}55`,
+          backgroundColor: `${pColor}18`,
+        }}
+      >
+        <span
+          className="inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle"
+          style={{ background: pColor, boxShadow: `0 0 6px ${pColor}` }}
+        />
+        {phase}
+      </div>
 
-      {/* CSS for animations */}
+      {/* CSS keyframes */}
       <style jsx>{`
         @keyframes twinkle {
-          0%, 100% { opacity: 0.3; }
+          0%, 100% { opacity: 0.25; }
           50% { opacity: 1; }
         }
         @keyframes smoke {
-          0% { opacity: 0.4; transform: translateY(0) scale(1); }
-          100% { opacity: 0; transform: translateY(40px) scale(2); }
-        }
-        @keyframes flicker {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.85; }
+          0%   { opacity: 0.5; transform: translateY(0) scale(1); }
+          100% { opacity: 0;   transform: translateY(50px) scale(2.2); }
         }
       `}</style>
     </div>
