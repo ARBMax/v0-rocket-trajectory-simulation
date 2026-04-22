@@ -272,6 +272,8 @@ export default function RocketSimulator() {
                     <SolarSystem
                       destinationPlanet={destinationPlanet}
                       onSelectPlanet={setDestinationPlanet}
+                      result={result}
+                      currentState={currentState}
                     />
                   </div>
                   <p className="mt-2 text-[10px] font-mono text-muted-foreground text-center uppercase tracking-widest">

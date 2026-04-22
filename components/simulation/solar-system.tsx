@@ -4,96 +4,31 @@ import { useRef, useState, useMemo } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls, Stars, Text, Html } from "@react-three/drei"
 import * as THREE from "three"
+import type { SimulationState, SimulationResult } from "@/lib/rocket-physics"
 
-const PLANETS = [
-  {
-    name: "Mercury",
-    radius: 0.22,
-    orbitRadius: 4.5,
-    speed: 0.047,
-    color: "#b5b5b5",
-    emissive: "#555555",
-    description: "Closest to Sun",
-  },
-  {
-    name: "Venus",
-    radius: 0.38,
-    orbitRadius: 6.5,
-    speed: 0.035,
-    color: "#e8cda0",
-    emissive: "#7a5e2a",
-    description: "Hottest planet",
-  },
-  {
-    name: "Earth",
-    radius: 0.4,
-    orbitRadius: 9,
-    speed: 0.029,
-    color: "#4fa3d9",
-    emissive: "#1a3d5c",
-    description: "Our home",
-  },
-  {
-    name: "Mars",
-    radius: 0.3,
-    orbitRadius: 12,
-    speed: 0.024,
-    color: "#c1440e",
-    emissive: "#5a1a05",
-    description: "The Red Planet",
-  },
-  {
-    name: "Jupiter",
-    radius: 0.9,
-    orbitRadius: 17,
-    speed: 0.013,
-    color: "#c88b3a",
-    emissive: "#5c3d18",
-    description: "Largest planet",
-  },
-  {
-    name: "Saturn",
-    radius: 0.75,
-    orbitRadius: 22,
-    speed: 0.009,
-    color: "#e4d191",
-    emissive: "#7a6930",
-    description: "Ringed giant",
-  },
-  {
-    name: "Uranus",
-    radius: 0.55,
-    orbitRadius: 27,
-    speed: 0.006,
-    color: "#7de8e8",
-    emissive: "#1a6060",
-    description: "Ice giant",
-  },
-  {
-    name: "Neptune",
-    radius: 0.52,
-    orbitRadius: 31,
-    speed: 0.005,
-    color: "#3f54ba",
-    emissive: "#141d4a",
-    description: "Farthest planet",
-  },
+export const PLANETS = [
+  { name: "Mercury", radius: 0.22, orbitRadius: 4.5,  speed: 0.047, color: "#b5b5b5", emissive: "#555555", description: "Closest to Sun" },
+  { name: "Venus",   radius: 0.38, orbitRadius: 6.5,  speed: 0.035, color: "#e8cda0", emissive: "#7a5e2a", description: "Hottest planet" },
+  { name: "Earth",   radius: 0.40, orbitRadius: 9.0,  speed: 0.029, color: "#4fa3d9", emissive: "#1a3d5c", description: "Our home" },
+  { name: "Mars",    radius: 0.30, orbitRadius: 12.0, speed: 0.024, color: "#c1440e", emissive: "#5a1a05", description: "The Red Planet" },
+  { name: "Jupiter", radius: 0.90, orbitRadius: 17.0, speed: 0.013, color: "#c88b3a", emissive: "#5c3d18", description: "Largest planet" },
+  { name: "Saturn",  radius: 0.75, orbitRadius: 22.0, speed: 0.009, color: "#e4d191", emissive: "#7a6930", description: "Ringed giant" },
+  { name: "Uranus",  radius: 0.55, orbitRadius: 27.0, speed: 0.006, color: "#7de8e8", emissive: "#1a6060", description: "Ice giant" },
+  { name: "Neptune", radius: 0.52, orbitRadius: 31.0, speed: 0.005, color: "#3f54ba", emissive: "#141d4a", description: "Farthest planet" },
 ]
 
-function OrbitRing({ radius, isDestination }: { radius: number; isDestination: boolean }) {
-  const points = useMemo(() => {
-    const pts = []
-    for (let i = 0; i <= 128; i++) {
-      const angle = (i / 128) * Math.PI * 2
-      pts.push(new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius))
-    }
-    return pts
-  }, [radius])
+const EARTH_ORBIT = 9.0
 
+// ─── Orbit Ring ───────────────────────────────────────────────────────────────
+function OrbitRing({ radius, isDestination }: { radius: number; isDestination: boolean }) {
   const geometry = useMemo(() => {
-    const geo = new THREE.BufferGeometry().setFromPoints(points)
-    return geo
-  }, [points])
+    const pts: THREE.Vector3[] = []
+    for (let i = 0; i <= 128; i++) {
+      const a = (i / 128) * Math.PI * 2
+      pts.push(new THREE.Vector3(Math.cos(a) * radius, 0, Math.sin(a) * radius))
+    }
+    return new THREE.BufferGeometry().setFromPoints(pts)
+  }, [radius])
 
   return (
     <line geometry={geometry}>
@@ -106,16 +41,128 @@ function OrbitRing({ radius, isDestination }: { radius: number; isDestination: b
   )
 }
 
+// ─── Rocket Transfer Path (Hohmann-style arc from Earth to destination) ───────
+function RocketPath({
+  destinationOrbit,
+  progress,           // 0..1 how far along the journey
+  active,
+}: {
+  destinationOrbit: number
+  progress: number
+  active: boolean
+}) {
+  // Build a smooth arc from Earth position (9,0) to destination position
+  // using a half-ellipse (Hohmann transfer approximation) in the XZ plane
+  const { arcPoints, travelledPoints } = useMemo(() => {
+    const startR = EARTH_ORBIT
+    const endR   = destinationOrbit
+    const semiMajor = (startR + endR) / 2
+    const semiMinor = Math.sqrt(startR * endR) * 0.85 // slight squash for visual appeal
+
+    const N = 120
+    const arc: THREE.Vector3[] = []
+    for (let i = 0; i <= N; i++) {
+      // angle from 0 (Earth side) to PI (destination side)
+      const t = (i / N) * Math.PI
+      const x = Math.cos(t) * semiMajor
+      const z = Math.sin(t) * semiMinor
+      arc.push(new THREE.Vector3(x, 0.08, z))
+    }
+    // Travelled portion
+    const cutoff = Math.round(progress * N)
+    const travelled = arc.slice(0, cutoff + 1)
+    return { arcPoints: arc, travelledPoints: travelled }
+  }, [destinationOrbit, progress])
+
+  const fullGeo     = useMemo(() => new THREE.BufferGeometry().setFromPoints(arcPoints),     [arcPoints])
+  const travelledGeo = useMemo(() => new THREE.BufferGeometry().setFromPoints(travelledPoints), [travelledPoints])
+
+  if (!active) return null
+
+  return (
+    <group>
+      {/* Ghost path (full arc, dim) */}
+      <line geometry={fullGeo}>
+        <lineBasicMaterial color="#00ffcc" opacity={0.15} transparent />
+      </line>
+      {/* Travelled portion (bright cyan) */}
+      {travelledPoints.length > 1 && (
+        <line geometry={travelledGeo}>
+          <lineBasicMaterial color="#00ffcc" opacity={0.85} transparent />
+        </line>
+      )}
+    </group>
+  )
+}
+
+// ─── Animated Rocket Dot along the transfer arc ───────────────────────────────
+function RocketDot({
+  destinationOrbit,
+  progress,
+  active,
+}: {
+  destinationOrbit: number
+  progress: number
+  active: boolean
+}) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  const glowRef = useRef<THREE.Mesh>(null)
+
+  const startR   = EARTH_ORBIT
+  const endR     = destinationOrbit
+  const semiMajor = (startR + endR) / 2
+  const semiMinor = Math.sqrt(startR * endR) * 0.85
+
+  // Map progress → angle on the arc
+  const angle = progress * Math.PI
+  const x = Math.cos(angle) * semiMajor
+  const z = Math.sin(angle) * semiMinor
+
+  useFrame(({ clock }) => {
+    if (glowRef.current) {
+      const s = 1 + 0.3 * Math.sin(clock.getElapsedTime() * 4)
+      glowRef.current.scale.setScalar(s)
+    }
+  })
+
+  if (!active) return null
+
+  return (
+    <group position={[x, 0.08, z]}>
+      {/* Outer glow */}
+      <mesh ref={glowRef}>
+        <sphereGeometry args={[0.22, 16, 16]} />
+        <meshBasicMaterial color="#00ffcc" transparent opacity={0.25} />
+      </mesh>
+      {/* Core dot */}
+      <mesh ref={meshRef}>
+        <sphereGeometry args={[0.1, 16, 16]} />
+        <meshStandardMaterial color="#ffffff" emissive="#00ffcc" emissiveIntensity={2} />
+      </mesh>
+      {/* Label */}
+      <Html position={[0, 0.45, 0]} center style={{ pointerEvents: "none" }}>
+        <div className="font-mono text-[9px] uppercase tracking-widest text-primary whitespace-nowrap
+                        border border-primary/50 bg-background/80 px-1.5 py-0.5 rounded">
+          Rocket — {Math.round(progress * 100)}%
+        </div>
+      </Html>
+    </group>
+  )
+}
+
+// ─── Planet ───────────────────────────────────────────────────────────────────
 function Planet({
   data,
   isDestination,
   onClick,
+  onPositionUpdate,
 }: {
   data: (typeof PLANETS)[0]
   isDestination: boolean
   onClick: () => void
+  onPositionUpdate?: (pos: THREE.Vector3) => void
 }) {
-  const meshRef = useRef<THREE.Mesh>(null)
+  const meshRef  = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
   const angleRef = useRef(Math.random() * Math.PI * 2)
@@ -125,15 +172,13 @@ function Planet({
     if (groupRef.current) {
       groupRef.current.position.x = Math.cos(angleRef.current) * data.orbitRadius
       groupRef.current.position.z = Math.sin(angleRef.current) * data.orbitRadius
+      if (onPositionUpdate) onPositionUpdate(groupRef.current.position.clone())
     }
-    if (meshRef.current) {
-      meshRef.current.rotation.y += delta * 0.4
-    }
+    if (meshRef.current) meshRef.current.rotation.y += delta * 0.4
   })
 
   return (
     <group ref={groupRef}>
-      {/* Selection ring */}
       {isDestination && (
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[data.radius + 0.15, data.radius + 0.3, 32]} />
@@ -141,7 +186,6 @@ function Planet({
         </mesh>
       )}
 
-      {/* Saturn rings */}
       {data.name === "Saturn" && (
         <mesh rotation={[-Math.PI / 2.5, 0, 0]}>
           <ringGeometry args={[data.radius + 0.2, data.radius + 0.7, 64]} />
@@ -149,7 +193,6 @@ function Planet({
         </mesh>
       )}
 
-      {/* Planet sphere */}
       <mesh
         ref={meshRef}
         onPointerOver={() => setHovered(true)}
@@ -167,13 +210,8 @@ function Planet({
         />
       </mesh>
 
-      {/* Label */}
       {(hovered || isDestination) && (
-        <Html
-          position={[0, data.radius + 0.5, 0]}
-          center
-          style={{ pointerEvents: "none" }}
-        >
+        <Html position={[0, data.radius + 0.5, 0]} center style={{ pointerEvents: "none" }}>
           <div className={`font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border whitespace-nowrap ${
             isDestination
               ? "text-primary border-primary/60 bg-background/80"
@@ -188,59 +226,119 @@ function Planet({
   )
 }
 
+// ─── Sun ──────────────────────────────────────────────────────────────────────
 function Sun() {
   const meshRef = useRef<THREE.Mesh>(null)
-  useFrame((_, delta) => {
-    if (meshRef.current) meshRef.current.rotation.y += delta * 0.1
-  })
-
+  useFrame((_, delta) => { if (meshRef.current) meshRef.current.rotation.y += delta * 0.1 })
   return (
     <group>
-      {/* Sun glow */}
-      <mesh>
-        <sphereGeometry args={[1.8, 32, 32]} />
-        <meshBasicMaterial color="#ff8c00" transparent opacity={0.08} />
-      </mesh>
-      <mesh>
-        <sphereGeometry args={[1.5, 32, 32]} />
-        <meshBasicMaterial color="#ffb300" transparent opacity={0.12} />
-      </mesh>
-      {/* Sun surface */}
+      <mesh><sphereGeometry args={[1.8, 32, 32]} /><meshBasicMaterial color="#ff8c00" transparent opacity={0.08} /></mesh>
+      <mesh><sphereGeometry args={[1.5, 32, 32]} /><meshBasicMaterial color="#ffb300" transparent opacity={0.12} /></mesh>
       <mesh ref={meshRef}>
         <sphereGeometry args={[1.2, 32, 32]} />
-        <meshStandardMaterial
-          color="#ffb300"
-          emissive="#ff6600"
-          emissiveIntensity={1.8}
-          roughness={0.9}
-        />
+        <meshStandardMaterial color="#ffb300" emissive="#ff6600" emissiveIntensity={1.8} roughness={0.9} />
       </mesh>
-      {/* Sun label */}
-      <Text
-        position={[0, 1.9, 0]}
-        fontSize={0.3}
-        color="#ffb300"
-        anchorX="center"
-        anchorY="bottom"
-      >
-        SOL
-      </Text>
+      <Text position={[0, 1.9, 0]} fontSize={0.3} color="#ffb300" anchorX="center" anchorY="bottom">SOL</Text>
       <pointLight color="#ffb300" intensity={6} distance={80} decay={1.2} />
     </group>
   )
 }
 
+// ─── Scene (needs to be inside Canvas) ───────────────────────────────────────
+function Scene({
+  destinationPlanet,
+  onSelectPlanet,
+  rocketProgress,
+}: {
+  destinationPlanet: string
+  onSelectPlanet: (name: string) => void
+  rocketProgress: number
+}) {
+  const destData = PLANETS.find(p => p.name === destinationPlanet) ?? PLANETS[3]
+  const hasJourney = rocketProgress > 0
+
+  return (
+    <>
+      <ambientLight intensity={0.15} />
+      <fog attach="fog" args={["#050a10", 60, 120]} />
+      <Stars radius={90} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} />
+      <Sun />
+
+      {/* Orbit rings */}
+      {PLANETS.map(p => (
+        <OrbitRing key={`orbit-${p.name}`} radius={p.orbitRadius} isDestination={destinationPlanet === p.name} />
+      ))}
+
+      {/* Transfer arc + rocket dot */}
+      <RocketPath
+        destinationOrbit={destData.orbitRadius}
+        progress={rocketProgress}
+        active={hasJourney}
+      />
+      <RocketDot
+        destinationOrbit={destData.orbitRadius}
+        progress={rocketProgress}
+        active={hasJourney}
+      />
+
+      {/* Planets */}
+      {PLANETS.map(p => (
+        <Planet
+          key={p.name}
+          data={p}
+          isDestination={destinationPlanet === p.name}
+          onClick={() => onSelectPlanet(p.name)}
+        />
+      ))}
+
+      <OrbitControls enablePan={false} minDistance={8} maxDistance={70} maxPolarAngle={Math.PI / 2.1} />
+    </>
+  )
+}
+
+// ─── Public component ─────────────────────────────────────────────────────────
 interface SolarSystemProps {
   destinationPlanet: string
   onSelectPlanet: (name: string) => void
+  result?: SimulationResult | null
+  currentState?: SimulationState | null
 }
 
-export function SolarSystem({ destinationPlanet, onSelectPlanet }: SolarSystemProps) {
+export function SolarSystem({ destinationPlanet, onSelectPlanet, result, currentState }: SolarSystemProps) {
+  // Map simulation progress (0→maxHeight) to journey fraction (0→1)
+  const rocketProgress = useMemo(() => {
+    if (!result || !currentState) return 0
+    const maxH = result.maxHeight
+    if (maxH <= 0) return 0
+    // Once the rocket has launched, show it progressing along the arc
+    const heightFraction = Math.min(1, currentState.height / maxH)
+    // After apogee the rocket continues to destination
+    const timeFraction = result.states.length > 1
+      ? Math.min(1, (result.states.indexOf(currentState) / (result.states.length - 1)))
+      : 0
+    return Math.max(heightFraction, timeFraction)
+  }, [result, currentState])
+
   return (
     <div className="w-full h-full relative">
-      {/* Instruction hint */}
       <div className="absolute top-2 right-2 z-10 text-[9px] font-mono uppercase tracking-widest text-muted-foreground border border-border/30 bg-background/60 px-2 py-1 rounded pointer-events-none">
         Click planet to select target · Drag to orbit · Scroll to zoom
+      </div>
+
+      {/* Legend */}
+      <div className="absolute bottom-2 left-2 z-10 flex items-center gap-3 text-[9px] font-mono uppercase tracking-widest text-muted-foreground border border-border/30 bg-background/60 px-3 py-1.5 rounded pointer-events-none">
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-4 h-px bg-[#00ffcc]" />
+          Transfer arc
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-2 h-2 rounded-full bg-[#00ffcc]" />
+          Rocket
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="inline-block w-4 h-px bg-[#334455]" />
+          Orbit
+        </span>
       </div>
 
       <Canvas
@@ -248,39 +346,12 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet }: SolarSystemPr
         style={{ width: "100%", height: "100%", background: "#020c14" }}
         gl={{ antialias: true, alpha: false }}
       >
-        <ambientLight intensity={0.15} />
-        <fog attach="fog" args={["#050a10", 60, 120]} />
-
-        <Stars radius={90} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} />
-
-        <Sun />
-
-        {PLANETS.map((planet) => (
-          <OrbitRing
-            key={`orbit-${planet.name}`}
-            radius={planet.orbitRadius}
-            isDestination={destinationPlanet === planet.name}
-          />
-        ))}
-
-        {PLANETS.map((planet) => (
-          <Planet
-            key={planet.name}
-            data={planet}
-            isDestination={destinationPlanet === planet.name}
-            onClick={() => onSelectPlanet(planet.name)}
-          />
-        ))}
-
-        <OrbitControls
-          enablePan={false}
-          minDistance={8}
-          maxDistance={70}
-          maxPolarAngle={Math.PI / 2.1}
+        <Scene
+          destinationPlanet={destinationPlanet}
+          onSelectPlanet={onSelectPlanet}
+          rocketProgress={rocketProgress}
         />
       </Canvas>
     </div>
   )
 }
-
-export { PLANETS }
