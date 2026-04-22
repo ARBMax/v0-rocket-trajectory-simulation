@@ -11,18 +11,21 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { RocketParams, ROCKET_PRESETS } from "@/lib/rocket-physics"
-import { Play, Pause, RotateCcw, Rocket, ChevronRight } from "lucide-react"
+import { PLANETS } from "@/components/simulation/solar-system"
+import { Play, Pause, RotateCcw, Rocket, ChevronRight, Globe } from "lucide-react"
 
 interface ControlPanelProps {
   params: RocketParams
   selectedPreset: string
   isRunning: boolean
   playbackSpeed: number
+  destinationPlanet: string
   onUpdateParam: <K extends keyof RocketParams>(key: K, value: RocketParams[K]) => void
   onSelectPreset: (preset: string) => void
   onTogglePlayback: () => void
   onReset: () => void
   onSetPlaybackSpeed: (speed: number) => void
+  onSelectDestination: (planet: string) => void
 }
 
 export function ControlPanel({
@@ -30,11 +33,13 @@ export function ControlPanel({
   selectedPreset,
   isRunning,
   playbackSpeed,
+  destinationPlanet,
   onUpdateParam,
   onSelectPreset,
   onTogglePlayback,
   onReset,
   onSetPlaybackSpeed,
+  onSelectDestination,
 }: ControlPanelProps) {
   const parameterGroups = [
     {
@@ -90,6 +95,56 @@ export function ControlPanel({
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Destination Planet */}
+        <div className="space-y-2 border-t border-border/30 pt-3">
+          <div className="flex items-center gap-2">
+            <Globe className="h-3 w-3 text-primary" />
+            <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+              Destination Planet
+            </Label>
+          </div>
+          <Select value={destinationPlanet} onValueChange={onSelectDestination}>
+            <SelectTrigger className="bg-input border-border/50 text-foreground font-mono text-xs h-9">
+              <SelectValue placeholder="Select destination" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border/50">
+              {PLANETS.map((planet) => (
+                <SelectItem key={planet.name} value={planet.name} className="font-mono text-xs">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-2 w-2 rounded-full shrink-0"
+                      style={{ backgroundColor: planet.color }}
+                    />
+                    <span>{planet.name}</span>
+                    <span className="text-muted-foreground ml-1">— {planet.description}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {/* Destination stats */}
+          {(() => {
+            const p = PLANETS.find(p => p.name === destinationPlanet)
+            if (!p) return null
+            return (
+              <div className="rounded border border-primary/20 bg-primary/5 px-3 py-2 space-y-1">
+                <div className="flex justify-between text-[10px] font-mono">
+                  <span className="text-muted-foreground">Target</span>
+                  <span className="text-primary">{p.name}</span>
+                </div>
+                <div className="flex justify-between text-[10px] font-mono">
+                  <span className="text-muted-foreground">Orbit Dist.</span>
+                  <span className="text-primary">{(p.orbitRadius * 0.5).toFixed(1)} AU (scaled)</span>
+                </div>
+                <div className="flex justify-between text-[10px] font-mono">
+                  <span className="text-muted-foreground">Info</span>
+                  <span className="text-primary">{p.description}</span>
+                </div>
+              </div>
+            )
+          })()}
         </div>
 
         {/* Parameter Groups */}

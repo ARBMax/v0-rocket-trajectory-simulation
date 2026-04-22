@@ -8,6 +8,7 @@ import { TelemetryDisplay } from "@/components/simulation/telemetry-display"
 import { ComparisonPanel } from "@/components/simulation/comparison-panel"
 import { RocketVisual } from "@/components/simulation/rocket-visual"
 import { AISuggestionPanel } from "@/components/simulation/ai-suggestion-panel"
+import { SolarSystem } from "@/components/simulation/solar-system"
 import { Starfield } from "@/components/starfield"
 import { SplashScreen } from "@/components/splash-screen"
 import { Rocket, Radio, Clock, Shield } from "lucide-react"
@@ -17,6 +18,7 @@ import { FunFactsBanner } from "@/components/fun-facts-banner"
 export default function RocketSimulator() {
   const [showSplash, setShowSplash] = useState(true)
   const [contentVisible, setContentVisible] = useState(false)
+  const [destinationPlanet, setDestinationPlanet] = useState("Mars")
   const [currentTime, setCurrentTime] = useState("--:--:--")
   const [currentDate, setCurrentDate] = useState("--- -- ----")
   const [timezone, setTimezone] = useState("UTC")
@@ -159,11 +161,13 @@ export default function RocketSimulator() {
                 selectedPreset={selectedPreset}
                 isRunning={isRunning}
                 playbackSpeed={playbackSpeed}
+                destinationPlanet={destinationPlanet}
                 onUpdateParam={updateParam}
                 onSelectPreset={selectPreset}
                 onTogglePlayback={togglePlayback}
                 onReset={reset}
                 onSetPlaybackSpeed={setPlaybackSpeed}
+                onSelectDestination={setDestinationPlanet}
               />
 
               {/* Quick Reference - Technical Panel */}
@@ -229,6 +233,12 @@ export default function RocketSimulator() {
                     3D Visual
                   </TabsTrigger>
                   <TabsTrigger 
+                    value="solarsystem"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
+                  >
+                    Solar System
+                  </TabsTrigger>
+                  <TabsTrigger 
                     value="altitude"
                     className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
                   >
@@ -252,6 +262,18 @@ export default function RocketSimulator() {
                   <div className="h-[400px] rounded border border-border/50 overflow-hidden bg-card/30">
                     <RocketVisual currentState={currentState} result={result} />
                   </div>
+                </TabsContent>
+
+                <TabsContent value="solarsystem" className="mt-4">
+                  <div className="h-[520px] rounded border border-border/50 overflow-hidden bg-black/80">
+                    <SolarSystem
+                      destinationPlanet={destinationPlanet}
+                      onSelectPlanet={setDestinationPlanet}
+                    />
+                  </div>
+                  <p className="mt-2 text-[10px] font-mono text-muted-foreground text-center uppercase tracking-widest">
+                    Mission target: <span className="text-primary">{destinationPlanet}</span> — Select a planet in the sidebar or click directly on the 3D model
+                  </p>
                 </TabsContent>
 
                 <TabsContent value="altitude" className="mt-4">
