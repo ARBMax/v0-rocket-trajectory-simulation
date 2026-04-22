@@ -6,10 +6,12 @@ import { OrbitControls, Stars, Text, Html } from "@react-three/drei"
 import * as THREE from "three"
 import type { SimulationState, SimulationResult } from "@/lib/rocket-physics"
 
+// Earth is always the departure — fixed, not selectable as destination
+const EARTH = { name: "Earth", radius: 0.40, orbitRadius: 9.0, speed: 0.029, color: "#4fa3d9", emissive: "#1a3d5c" }
+
 export const PLANETS = [
   { name: "Mercury", radius: 0.22, orbitRadius: 4.5,  speed: 0.047, color: "#b5b5b5", emissive: "#555555", description: "Closest to Sun" },
   { name: "Venus",   radius: 0.38, orbitRadius: 6.5,  speed: 0.035, color: "#e8cda0", emissive: "#7a5e2a", description: "Hottest planet" },
-  { name: "Earth",   radius: 0.40, orbitRadius: 9.0,  speed: 0.029, color: "#4fa3d9", emissive: "#1a3d5c", description: "Our home" },
   { name: "Mars",    radius: 0.30, orbitRadius: 12.0, speed: 0.024, color: "#c1440e", emissive: "#5a1a05", description: "The Red Planet" },
   { name: "Jupiter", radius: 0.90, orbitRadius: 17.0, speed: 0.013, color: "#c88b3a", emissive: "#5c3d18", description: "Largest planet" },
   { name: "Saturn",  radius: 0.75, orbitRadius: 22.0, speed: 0.009, color: "#e4d191", emissive: "#7a6930", description: "Ringed giant" },
@@ -17,7 +19,48 @@ export const PLANETS = [
   { name: "Neptune", radius: 0.52, orbitRadius: 31.0, speed: 0.005, color: "#3f54ba", emissive: "#141d4a", description: "Farthest planet" },
 ]
 
-const EARTH_ORBIT = 9.0
+const EARTH_ORBIT = EARTH.orbitRadius
+
+// ─── Earth (fixed departure) ──────────────────────────────────────────────────
+function EarthDeparture() {
+  const meshRef  = useRef<THREE.Mesh>(null)
+  const groupRef = useRef<THREE.Group>(null)
+  const angleRef = useRef(0) // fixed at angle 0 on its orbit
+
+  useFrame((_, delta) => {
+    angleRef.current += EARTH.speed * delta * 0.5
+    if (groupRef.current) {
+      groupRef.current.position.x = Math.cos(angleRef.current) * EARTH.orbitRadius
+      groupRef.current.position.z = Math.sin(angleRef.current) * EARTH.orbitRadius
+    }
+    if (meshRef.current) meshRef.current.rotation.y += delta * 0.5
+  })
+
+  return (
+    <group ref={groupRef}>
+      {/* Departure glow ring */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[EARTH.radius + 0.15, EARTH.radius + 0.28, 32]} />
+        <meshBasicMaterial color="#4fa3d9" transparent opacity={0.5} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh ref={meshRef}>
+        <sphereGeometry args={[EARTH.radius, 32, 32]} />
+        <meshStandardMaterial
+          color={EARTH.color}
+          emissive={EARTH.emissive}
+          emissiveIntensity={0.4}
+          roughness={0.7}
+          metalness={0.1}
+        />
+      </mesh>
+      <Html position={[0, EARTH.radius + 0.55, 0]} center style={{ pointerEvents: "none" }}>
+        <div className="font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 rounded border whitespace-nowrap text-[#4fa3d9] border-[#4fa3d9]/50 bg-background/80">
+          Earth — Departure
+        </div>
+      </Html>
+    </group>
+  )
+}
 
 // ─── Orbit Ring ───────────────────────────────────────────────────────────────
 function OrbitRing({ radius, isDestination }: { radius: number; isDestination: boolean }) {
@@ -264,10 +307,16 @@ function Scene({
       <Stars radius={90} depth={50} count={5000} factor={4} saturation={0} fade speed={0.5} />
       <Sun />
 
-      {/* Orbit rings */}
+      {/* Earth orbit ring (always shown as departure) */}
+      <OrbitRing radius={EARTH.orbitRadius} isDestination={false} />
+
+      {/* Orbit rings for selectable planets */}
       {PLANETS.map(p => (
         <OrbitRing key={`orbit-${p.name}`} radius={p.orbitRadius} isDestination={destinationPlanet === p.name} />
       ))}
+
+      {/* Fixed Earth departure marker */}
+      <EarthDeparture />
 
       {/* Transfer arc + rocket dot */}
       <RocketPath
