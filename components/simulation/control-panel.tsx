@@ -105,7 +105,7 @@ export function ControlPanel({
               Destination Planet
             </Label>
           </div>
-          <Select value={destinationPlanet} onValueChange={onSelectDestination}>
+          <Select value={destinationPlanet ?? "Mars"} onValueChange={onSelectDestination}>
             <SelectTrigger className="bg-input border-border/50 text-foreground font-mono text-xs h-9">
               <SelectValue placeholder="Select destination" />
             </SelectTrigger>

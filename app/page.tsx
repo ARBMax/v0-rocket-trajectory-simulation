@@ -264,8 +264,11 @@ export default function RocketSimulator() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="solarsystem" className="mt-4">
-                  <div className="h-[520px] rounded border border-border/50 overflow-hidden bg-black/80">
+                <TabsContent value="solarsystem" className="mt-4" forceMount>
+                  <div
+                    className="rounded border border-border/50 overflow-hidden bg-black"
+                    style={{ height: 520 }}
+                  >
                     <SolarSystem
                       destinationPlanet={destinationPlanet}
                       onSelectPlanet={setDestinationPlanet}

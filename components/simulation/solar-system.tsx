@@ -222,7 +222,6 @@ function Sun() {
         color="#ffb300"
         anchorX="center"
         anchorY="bottom"
-        font="/fonts/GeistMono-Regular.ttf"
       >
         SOL
       </Text>
@@ -246,8 +245,8 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet }: SolarSystemPr
 
       <Canvas
         camera={{ position: [0, 20, 40], fov: 55 }}
-        style={{ background: "transparent" }}
-        gl={{ antialias: true, alpha: true }}
+        style={{ width: "100%", height: "100%", background: "#020c14" }}
+        gl={{ antialias: true, alpha: false }}
       >
         <ambientLight intensity={0.15} />
         <fog attach="fog" args={["#050a10", 60, 120]} />
