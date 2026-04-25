@@ -11,6 +11,9 @@ import { AISuggestionPanel } from "@/components/simulation/ai-suggestion-panel"
 import { SolarSystem } from "@/components/simulation/solar-system"
 import { Starfield } from "@/components/starfield"
 import { SplashScreen } from "@/components/splash-screen"
+import { MissionIndicator } from "@/components/mission-indicator"
+import { KeyboardHints } from "@/components/keyboard-hints"
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { Rocket, Radio, Clock, Shield } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FunFactsBanner } from "@/components/fun-facts-banner"
@@ -55,6 +58,15 @@ export default function RocketSimulator() {
     setShowSplash(false)
     setTimeout(() => setContentVisible(true), 100)
   }
+
+  // Setup keyboard shortcuts
+  useKeyboardShortcuts({
+    onTogglePlayback: togglePlayback,
+    onReset: reset,
+    onSpeedUp: () => setPlaybackSpeed(Math.min(5, playbackSpeed + 0.5)),
+    onSpeedDown: () => setPlaybackSpeed(Math.max(0.1, playbackSpeed - 0.5)),
+    isRunning,
+  })
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -298,6 +310,9 @@ export default function RocketSimulator() {
                 <div className="h-px flex-1 bg-border" />
               </div>
 
+              {/* Mission Status */}
+              <MissionIndicator result={result} destinationPlanet={destinationPlanet} />
+
               {/* Analysis Grid */}
               <div className="grid gap-4 lg:grid-cols-2">
                 {/* AI Suggestions */}
@@ -342,6 +357,9 @@ export default function RocketSimulator() {
             </div>
           </div>
         </footer>
+
+        {/* Keyboard Shortcuts Overlay */}
+        <KeyboardHints />
       </div>
     </div>
   )

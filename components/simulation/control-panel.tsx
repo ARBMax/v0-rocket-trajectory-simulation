@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select"
 import { RocketParams, ROCKET_PRESETS } from "@/lib/rocket-physics"
 import { PLANETS } from "@/components/simulation/solar-system"
+import { GuidanceBadges } from "@/components/guidance-badges"
 import { Play, Pause, RotateCcw, Rocket, ChevronRight, Globe } from "lucide-react"
 
 interface ControlPanelProps {
@@ -78,6 +79,9 @@ export function ControlPanel({
       </div>
 
       <div className="p-4 space-y-5">
+        {/* Guidance Badges */}
+        <GuidanceBadges params={params} />
+
         {/* Preset Selection */}
         <div className="space-y-2">
           <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
