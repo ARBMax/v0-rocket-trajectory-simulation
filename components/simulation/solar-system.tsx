@@ -24,20 +24,17 @@ const EARTH_ORBIT = EARTH.orbitRadius
 // ─── Earth (fixed departure) ──────────────────────────────────────────────────
 function EarthDeparture() {
   const meshRef  = useRef<THREE.Mesh>(null)
-  const groupRef = useRef<THREE.Group>(null)
-  const angleRef = useRef(0) // fixed at angle 0 on its orbit
 
   useFrame((_, delta) => {
-    angleRef.current += EARTH.speed * delta * 0.5
-    if (groupRef.current) {
-      groupRef.current.position.x = Math.cos(angleRef.current) * EARTH.orbitRadius
-      groupRef.current.position.z = Math.sin(angleRef.current) * EARTH.orbitRadius
-    }
     if (meshRef.current) meshRef.current.rotation.y += delta * 0.5
   })
 
+  // Fixed position at angle 0 on Earth's orbit
+  const earthX = EARTH.orbitRadius
+  const earthZ = 0
+
   return (
-    <group ref={groupRef}>
+    <group position={[earthX, 0, earthZ]}>
       {/* Departure glow ring */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[EARTH.radius + 0.15, EARTH.radius + 0.28, 32]} />
