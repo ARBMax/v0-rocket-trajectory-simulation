@@ -39,11 +39,18 @@ export function AISuggestionPanel({ params, result, onApplySuggestion }: AISugge
   const [analysis, setAnalysis] = useState<AIAnalysis | null>(null)
   const [isPending, startTransition] = useTransition()
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const handleAnalyze = () => {
+    setError(null)
     startTransition(async () => {
-      const result_analysis = await generateAISuggestions(params, result)
-      setAnalysis(result_analysis)
+      try {
+        const result_analysis = await generateAISuggestions(params, result)
+        setAnalysis(result_analysis)
+      } catch (err) {
+        setError("Failed to analyze. Using fallback recommendations.")
+        console.error("Analysis error:", err)
+      }
     })
   }
 
@@ -91,6 +98,12 @@ export function AISuggestionPanel({ params, result, onApplySuggestion }: AISugge
       </CardHeader>
 
       <CardContent className="pt-4 space-y-4">
+        {error && (
+          <div className="p-3 rounded border border-yellow-500/30 bg-yellow-500/10 text-yellow-300 text-xs font-mono">
+            ⚠ {error} Suggestions are calculated based on rocket physics principles.
+          </div>
+        )}
+
         {!analysis && !isPending && (
           <div className="text-center py-8 px-4">
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted/50 mb-3">
