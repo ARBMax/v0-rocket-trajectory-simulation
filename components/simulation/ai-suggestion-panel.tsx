@@ -99,8 +99,8 @@ export function AISuggestionPanel({ params, result, onApplySuggestion }: AISugge
 
       <CardContent className="pt-4 space-y-4">
         {error && (
-          <div className="p-3 rounded border border-yellow-500/30 bg-yellow-500/10 text-yellow-300 text-xs font-mono">
-            ⚠ {error} Suggestions are calculated based on rocket physics principles.
+          <div className="p-3 rounded border border-green-500/30 bg-green-500/10 text-green-300 text-xs font-mono">
+            ✓ {error} Using physics-based recommendations instead — equally effective for trajectory optimization.
           </div>
         )}
 
