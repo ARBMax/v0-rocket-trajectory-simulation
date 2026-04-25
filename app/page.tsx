@@ -8,11 +8,15 @@ import { TelemetryDisplay } from "@/components/simulation/telemetry-display"
 import { ComparisonPanel } from "@/components/simulation/comparison-panel"
 import { RocketVisual } from "@/components/simulation/rocket-visual"
 import { AISuggestionPanel } from "@/components/simulation/ai-suggestion-panel"
+import { PhysicsEquationsPanel } from "@/components/simulation/physics-equations-panel"
+import { ExportMission } from "@/components/simulation/export-mission"
 import { SolarSystem } from "@/components/simulation/solar-system"
 import { Starfield } from "@/components/starfield"
 import { SplashScreen } from "@/components/splash-screen"
 import { MissionIndicator } from "@/components/mission-indicator"
 import { KeyboardHints } from "@/components/keyboard-hints"
+import { CustomObjectives } from "@/components/custom-objectives"
+import { RocketGallery } from "@/components/rocket-gallery"
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { Rocket, Radio, Clock, Shield } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -181,6 +185,24 @@ export default function RocketSimulator() {
                 onSetPlaybackSpeed={setPlaybackSpeed}
                 onSelectDestination={setDestinationPlanet}
               />
+
+              {/* Rocket Gallery */}
+              <RocketGallery
+                onSelectRocket={(galleryParams) => {
+                  Object.entries(galleryParams).forEach(([key, value]) => {
+                    updateParam(key as keyof typeof params, value as number)
+                  })
+                }}
+              />
+
+              {/* Custom Mission Objectives */}
+              <CustomObjectives result={result} />
+
+              {/* Physics Equations Display */}
+              <PhysicsEquationsPanel currentState={currentState} params={params} />
+
+              {/* Export Mission */}
+              <ExportMission result={result} params={params} destinationPlanet={destinationPlanet} />
 
               {/* Quick Reference - Technical Panel */}
               <div className="rounded border border-border/50 bg-card/50 backdrop-blur-sm p-4">
