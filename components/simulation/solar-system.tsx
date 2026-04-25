@@ -351,18 +351,22 @@ interface SolarSystemProps {
 }
 
 export function SolarSystem({ destinationPlanet, onSelectPlanet, result, currentState }: SolarSystemProps) {
-  // Map simulation progress (0→maxHeight) to journey fraction (0→1)
+  // Map simulation progress (0→maxHeight→landing) to journey fraction (0→1)
+  // Extend beyond apogee so the rocket travels full arc to destination
   const rocketProgress = useMemo(() => {
     if (!result || !currentState) return 0
-    const maxH = result.maxHeight
-    if (maxH <= 0) return 0
-    // Once the rocket has launched, show it progressing along the arc
-    const heightFraction = Math.min(1, currentState.height / maxH)
-    // After apogee the rocket continues to destination
-    const timeFraction = result.states.length > 1
-      ? Math.min(1, (result.states.indexOf(currentState) / (result.states.length - 1)))
-      : 0
-    return Math.max(heightFraction, timeFraction)
+    if (result.states.length < 2) return 0
+    
+    // Find current index in simulation states
+    const currentIndex = result.states.indexOf(currentState)
+    if (currentIndex < 0) return 0
+    
+    // Map the entire simulation duration (launch → landing) to 0 → 1
+    // This makes the rocket travel the full Hohmann arc from Earth to destination
+    const totalStates = result.states.length - 1
+    const progress = currentIndex / totalStates
+    
+    return Math.min(1, progress)
   }, [result, currentState])
 
   return (
