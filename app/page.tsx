@@ -233,12 +233,6 @@ export default function RocketSimulator() {
                     3D Visual
                   </TabsTrigger>
                   <TabsTrigger 
-                    value="solarsystem"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
-                  >
-                    Solar System
-                  </TabsTrigger>
-                  <TabsTrigger 
                     value="altitude"
                     className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
                   >
@@ -258,27 +252,30 @@ export default function RocketSimulator() {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="visual" className="mt-4">
+                <TabsContent value="visual" className="mt-4 space-y-4">
                   <div className="h-[400px] rounded border border-border/50 overflow-hidden bg-card/30">
                     <RocketVisual currentState={currentState} result={result} />
                   </div>
-                </TabsContent>
-
-                <TabsContent value="solarsystem" className="mt-4" forceMount>
-                  <div
-                    className="rounded border border-border/50 overflow-hidden bg-black"
-                    style={{ height: 520 }}
-                  >
-                    <SolarSystem
-                      destinationPlanet={destinationPlanet}
-                      onSelectPlanet={setDestinationPlanet}
-                      result={result}
-                      currentState={currentState}
-                    />
+                  
+                  <div>
+                    <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground mb-2">
+                      Mission Trajectory
+                    </h3>
+                    <div
+                      className="rounded border border-border/50 overflow-hidden bg-black"
+                      style={{ height: 480 }}
+                    >
+                      <SolarSystem
+                        destinationPlanet={destinationPlanet}
+                        onSelectPlanet={setDestinationPlanet}
+                        result={result}
+                        currentState={currentState}
+                      />
+                    </div>
+                    <p className="mt-2 text-[10px] font-mono text-muted-foreground text-center uppercase tracking-widest">
+                      Target: <span className="text-primary">{destinationPlanet}</span>
+                    </p>
                   </div>
-                  <p className="mt-2 text-[10px] font-mono text-muted-foreground text-center uppercase tracking-widest">
-                    Mission target: <span className="text-primary">{destinationPlanet}</span> — Select a planet in the sidebar or click directly on the 3D model
-                  </p>
                 </TabsContent>
 
                 <TabsContent value="altitude" className="mt-4">
