@@ -225,6 +225,57 @@ export default function RocketSimulator() {
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
               }`}
             >
+              {/* Flight Parameters Section */}
+              <div className="flex-shrink-0 pb-4 mb-4">
+                <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                  Flight Parameters
+                </div>
+                <div className="rounded border border-border/50 bg-card/50 p-4">
+                  <div className="grid grid-cols-4 gap-6 text-xs font-mono">
+                    <div>
+                      <div className="text-muted-foreground text-[9px] uppercase tracking-wider mb-2">Thrust</div>
+                      <div className="text-primary text-sm font-bold">{params.thrustForce.toFixed(0)}</div>
+                      <div className="text-muted-foreground text-[8px]">kN</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-[9px] uppercase tracking-wider mb-2">Dry Mass</div>
+                      <div className="text-primary text-sm font-bold">{params.dryMass.toFixed(0)}</div>
+                      <div className="text-muted-foreground text-[8px]">kg</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-[9px] uppercase tracking-wider mb-2">Fuel Mass</div>
+                      <div className="text-primary text-sm font-bold">{params.fuelMass.toFixed(0)}</div>
+                      <div className="text-muted-foreground text-[8px]">kg</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-[9px] uppercase tracking-wider mb-2">Burn Time</div>
+                      <div className="text-primary text-sm font-bold">{params.burnTime.toFixed(1)}</div>
+                      <div className="text-muted-foreground text-[8px]">s</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-[9px] uppercase tracking-wider mb-2">Drag Coeff</div>
+                      <div className="text-primary text-sm font-bold">{params.dragCoefficient.toFixed(2)}</div>
+                      <div className="text-muted-foreground text-[8px]">—</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-[9px] uppercase tracking-wider mb-2">Cross Area</div>
+                      <div className="text-primary text-sm font-bold">{params.crossSectionalArea.toFixed(3)}</div>
+                      <div className="text-muted-foreground text-[8px]">m²</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-[9px] uppercase tracking-wider mb-2">Exit Vel</div>
+                      <div className="text-primary text-sm font-bold">{params.exhaustVelocity.toFixed(0)}</div>
+                      <div className="text-muted-foreground text-[8px]">m/s</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground text-[9px] uppercase tracking-wider mb-2">Target</div>
+                      <div className="text-primary text-sm font-bold">{destinationPlanet}</div>
+                      <div className="text-muted-foreground text-[8px]">planet</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Live Telemetry Section */}
               <div className="flex-shrink-0 pb-4 mb-4">
                 <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground mb-3">
