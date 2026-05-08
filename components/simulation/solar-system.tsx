@@ -7,16 +7,16 @@ import * as THREE from "three"
 import type { SimulationState, SimulationResult } from "@/lib/rocket-physics"
 
 // Earth is always the departure — fixed, not selectable as destination
-const EARTH = { name: "Earth", radius: 0.40, orbitRadius: 9.0, speed: 0.029, color: "#4fa3d9", emissive: "#1a3d5c" }
+const EARTH = { name: "Earth", radius: 0.24, orbitRadius: 5.85, speed: 0.029, color: "#4fa3d9", emissive: "#1a3d5c" }
 
 export const PLANETS = [
-  { name: "Mercury", radius: 0.22, orbitRadius: 4.5,  speed: 0.047, color: "#b5b5b5", emissive: "#555555", description: "Closest to Sun" },
-  { name: "Venus",   radius: 0.38, orbitRadius: 6.5,  speed: 0.035, color: "#e8cda0", emissive: "#7a5e2a", description: "Hottest planet" },
-  { name: "Mars",    radius: 0.30, orbitRadius: 12.0, speed: 0.024, color: "#c1440e", emissive: "#5a1a05", description: "The Red Planet" },
-  { name: "Jupiter", radius: 0.90, orbitRadius: 17.0, speed: 0.013, color: "#c88b3a", emissive: "#5c3d18", description: "Largest planet" },
-  { name: "Saturn",  radius: 0.75, orbitRadius: 22.0, speed: 0.009, color: "#e4d191", emissive: "#7a6930", description: "Ringed giant" },
-  { name: "Uranus",  radius: 0.55, orbitRadius: 27.0, speed: 0.006, color: "#7de8e8", emissive: "#1a6060", description: "Ice giant" },
-  { name: "Neptune", radius: 0.52, orbitRadius: 31.0, speed: 0.005, color: "#3f54ba", emissive: "#141d4a", description: "Farthest planet" },
+  { name: "Mercury", radius: 0.13, orbitRadius: 2.93,  speed: 0.047, color: "#b5b5b5", emissive: "#555555", description: "Closest to Sun" },
+  { name: "Venus",   radius: 0.23, orbitRadius: 4.23,  speed: 0.035, color: "#e8cda0", emissive: "#7a5e2a", description: "Hottest planet" },
+  { name: "Mars",    radius: 0.18, orbitRadius: 7.80, speed: 0.024, color: "#c1440e", emissive: "#5a1a05", description: "The Red Planet" },
+  { name: "Jupiter", radius: 0.54, orbitRadius: 11.05, speed: 0.013, color: "#c88b3a", emissive: "#5c3d18", description: "Largest planet" },
+  { name: "Saturn",  radius: 0.45, orbitRadius: 14.30, speed: 0.009, color: "#e4d191", emissive: "#7a6930", description: "Ringed giant" },
+  { name: "Uranus",  radius: 0.33, orbitRadius: 17.55, speed: 0.006, color: "#7de8e8", emissive: "#1a6060", description: "Ice giant" },
+  { name: "Neptune", radius: 0.31, orbitRadius: 20.15, speed: 0.005, color: "#3f54ba", emissive: "#141d4a", description: "Farthest planet" },
 ]
 
 const EARTH_ORBIT = EARTH.orbitRadius
