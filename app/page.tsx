@@ -161,7 +161,7 @@ export default function RocketSimulator() {
           <div className="flex-1 overflow-hidden flex gap-6 px-6 pb-6">
             {/* Left Sidebar - Controls */}
             <aside
-              className={`w-80 overflow-y-auto transition-all duration-500 delay-100 flex-shrink-0 ${
+              className={`w-96 overflow-y-auto transition-all duration-500 delay-100 flex-shrink-0 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
               }`}
             >
@@ -270,10 +270,45 @@ export default function RocketSimulator() {
                 </TabsList>
 
                 <TabsContent value="visual" className="flex-1 overflow-hidden flex flex-col gap-3 mt-0">
-                  <div className="h-[420px] rounded border border-border/50 overflow-hidden bg-card/30 flex-shrink-0">
-                    <RocketVisual currentState={currentState} result={result} />
+                  <div className="grid grid-cols-2 gap-3 flex-shrink-0">
+                    {/* Rocket Visual */}
+                    <div className="h-64 rounded border border-border/50 overflow-hidden bg-card/30">
+                      <RocketVisual currentState={currentState} result={result} />
+                    </div>
+                    
+                    {/* Quick Telemetry Cards */}
+                    <div className="space-y-2">
+                      <div className="h-32 rounded border border-border/50 bg-card/50 p-3 overflow-y-auto">
+                        <div className="text-[9px] font-mono space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Alt:</span>
+                            <span className="text-primary">{currentState?.height.toFixed(0)}m</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Vel:</span>
+                            <span className="text-primary">{currentState?.velocity.toFixed(1)}m/s</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Acl:</span>
+                            <span className="text-primary">{currentState?.acceleration.toFixed(2)}g</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Time:</span>
+                            <span className="text-primary">{currentState?.time.toFixed(1)}s</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="h-32 rounded border border-border/50 bg-card/50 p-3">
+                        <div className="text-[9px] font-mono text-muted-foreground">
+                          <div className="mb-1 text-primary">Max Height</div>
+                          <div className="text-lg text-primary font-bold">{result?.maxHeight.toFixed(0)}m</div>
+                          <div className="mt-2 text-[8px]">Range: {(result?.maxHeight ? result.maxHeight * 0.3 : 0).toFixed(0)}m</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
+                  {/* Mission Trajectory - Full Width Below */}
                   <div className="flex-1 min-h-0 flex flex-col">
                     <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground mb-2 flex-shrink-0">
                       Mission Trajectory
