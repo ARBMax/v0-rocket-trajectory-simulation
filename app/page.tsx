@@ -152,87 +152,81 @@ export default function RocketSimulator() {
           </div>
         </div>
 
-        <main className="flex-1 overflow-hidden flex flex-col">
-          {/* Fun Facts Banner */}
-          <div className="px-6 pt-4 pb-2 flex-shrink-0">
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="border-b border-border/50 px-6 py-4 flex-shrink-0">
             <FunFactsBanner />
           </div>
 
-          <div className="flex-1 overflow-hidden flex gap-6 px-6 pb-6">
+          {/* Main Content Grid */}
+          <div className="flex-1 overflow-hidden flex gap-4 p-6">
             {/* Left Sidebar - Controls */}
             <aside
-              className={`w-96 overflow-y-auto transition-all duration-500 delay-100 flex-shrink-0 ${
+              className={`w-80 overflow-y-auto transition-all duration-500 delay-100 flex-shrink-0 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
               }`}
             >
-              {/* Section Label */}
-              <div className="sticky top-0 z-20 flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground bg-background/95 backdrop-blur-sm py-3 mb-4">
-                <div className="h-px flex-1 bg-border" />
-                <span>Flight Parameters</span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
+              <div className="space-y-4">
+                {/* Control Panel */}
+                <ControlPanel
+                  params={params}
+                  selectedPreset={selectedPreset}
+                  isRunning={isRunning}
+                  playbackSpeed={playbackSpeed}
+                  destinationPlanet={destinationPlanet}
+                  onUpdateParam={updateParam}
+                  onSelectPreset={selectPreset}
+                  onTogglePlayback={togglePlayback}
+                  onReset={reset}
+                  onSetPlaybackSpeed={setPlaybackSpeed}
+                  onSelectDestination={setDestinationPlanet}
+                />
 
-              <div className="space-y-5">
-                {/* Control Panel - Primary */}
-                <div>
-                  <ControlPanel
-                    params={params}
-                    selectedPreset={selectedPreset}
-                    isRunning={isRunning}
-                    playbackSpeed={playbackSpeed}
-                    destinationPlanet={destinationPlanet}
-                    onUpdateParam={updateParam}
-                    onSelectPreset={selectPreset}
-                    onTogglePlayback={togglePlayback}
-                    onReset={reset}
-                    onSetPlaybackSpeed={setPlaybackSpeed}
-                    onSelectDestination={setDestinationPlanet}
-                  />
+                {/* Mission Indicator */}
+                <MissionIndicator result={result} destinationPlanet={destinationPlanet} />
+
+                {/* Quick Stats */}
+                <div className="rounded border border-border/50 bg-card/50 p-4">
+                  <h3 className="text-[10px] font-mono uppercase tracking-wider text-primary mb-3">Quick Stats</h3>
+                  <div className="space-y-2 text-xs font-mono">
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Max Height</span>
+                      <span className="text-primary">{result?.maxHeight.toFixed(0) ?? "—"}m</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Peak Velocity</span>
+                      <span className="text-primary">{result?.maxVelocity?.toFixed(1) ?? "—"}m/s</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Flight Time</span>
+                      <span className="text-primary">{result?.states[result?.states.length - 1]?.time.toFixed(1) ?? "—"}s</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Mission Objectives */}
-                <div>
-                  <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.15em] text-primary mb-2">
-                    <span>Mission Goals</span>
-                  </div>
-                  <CustomObjectives result={result} />
-                </div>
-
-                {/* Rocket Gallery */}
-                <div>
-                  <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.15em] text-primary mb-2">
-                    <span>Rocket Library</span>
-                  </div>
-                  <RocketGallery
-                    onSelectRocket={(galleryParams) => {
-                      Object.entries(galleryParams).forEach(([key, value]) => {
+                {/* AI Suggestions */}
+                <AISuggestionPanel 
+                  params={params} 
+                  result={result}
+                  onApplySuggestion={(changes) => {
+                    Object.entries(changes).forEach(([key, value]) => {
+                      if (value !== undefined) {
                         updateParam(key as keyof typeof params, value as number)
-                      })
-                    }}
-                  />
-                </div>
-
-                {/* Advanced Tools */}
-                <div className="space-y-3 pt-2 border-t border-border/30">
-                  <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.15em] text-primary mb-3">
-                    <span>Advanced Tools</span>
-                  </div>
-                  <div className="space-y-3">
-                    <PhysicsEquationsPanel currentState={currentState} params={params} />
-                    <ExportMission result={result} params={params} destinationPlanet={destinationPlanet} />
-                  </div>
-                </div>
+                      }
+                    })
+                  }}
+                />
               </div>
             </aside>
 
-            {/* Main Content Area */}
+            {/* Main Visualization Area */}
             <div
               className={`flex-1 overflow-hidden flex flex-col transition-all duration-500 delay-200 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
               }`}
             >
-              {/* Telemetry Display - Compact */}
-              <div className="flex-shrink-0 pb-4 border-b border-border/30">
+              {/* Telemetry */}
+              <div className="flex-shrink-0 pb-3 border-b border-border/30">
                 <TelemetryDisplay
                   currentState={currentState}
                   result={result}
@@ -240,14 +234,20 @@ export default function RocketSimulator() {
                 />
               </div>
 
-              {/* Visualization Tabs - Full Height */}
-              <Tabs defaultValue="visual" className="w-full flex-1 flex flex-col overflow-hidden mt-4">
+              {/* Tabs */}
+              <Tabs defaultValue="visual" className="flex-1 flex flex-col overflow-hidden mt-3">
                 <TabsList className="w-full justify-start gap-0 bg-transparent border-b border-border/50 rounded-none p-0 h-auto flex-shrink-0">
                   <TabsTrigger 
                     value="visual" 
                     className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
                   >
-                    3D Visual
+                    3D Rocket
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="trajectory"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
+                  >
+                    Trajectory
                   </TabsTrigger>
                   <TabsTrigger 
                     value="altitude"
@@ -269,53 +269,15 @@ export default function RocketSimulator() {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="visual" className="flex-1 overflow-hidden flex flex-col gap-3 mt-0">
-                  <div className="grid grid-cols-2 gap-3 flex-shrink-0">
-                    {/* Rocket Visual */}
-                    <div className="h-64 rounded border border-border/50 overflow-hidden bg-card/30">
+                <div className="flex-1 overflow-hidden mt-3">
+                  <TabsContent value="visual" className="h-full overflow-hidden m-0">
+                    <div className="h-full rounded border border-border/50 overflow-hidden bg-card/30">
                       <RocketVisual currentState={currentState} result={result} />
                     </div>
-                    
-                    {/* Quick Telemetry Cards */}
-                    <div className="space-y-2">
-                      <div className="h-32 rounded border border-border/50 bg-card/50 p-3 overflow-y-auto">
-                        <div className="text-[9px] font-mono space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Alt:</span>
-                            <span className="text-primary">{currentState?.height.toFixed(0)}m</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Vel:</span>
-                            <span className="text-primary">{currentState?.velocity.toFixed(1)}m/s</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Acl:</span>
-                            <span className="text-primary">{currentState?.acceleration.toFixed(2)}g</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Time:</span>
-                            <span className="text-primary">{currentState?.time.toFixed(1)}s</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="h-32 rounded border border-border/50 bg-card/50 p-3">
-                        <div className="text-[9px] font-mono text-muted-foreground">
-                          <div className="mb-1 text-primary">Max Height</div>
-                          <div className="text-lg text-primary font-bold">{result?.maxHeight.toFixed(0)}m</div>
-                          <div className="mt-2 text-[8px]">Range: {(result?.maxHeight ? result.maxHeight * 0.3 : 0).toFixed(0)}m</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Mission Trajectory - Full Width Below */}
-                  <div className="flex-1 min-h-0 flex flex-col">
-                    <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground mb-2 flex-shrink-0">
-                      Mission Trajectory
-                    </h3>
-                    <div
-                      className="rounded border border-border/50 overflow-hidden bg-black flex-1 min-h-0"
-                    >
+                  </TabsContent>
+
+                  <TabsContent value="trajectory" className="h-full overflow-hidden m-0">
+                    <div className="h-full rounded border border-border/50 overflow-hidden bg-black">
                       <SolarSystem
                         destinationPlanet={destinationPlanet}
                         onSelectPlanet={setDestinationPlanet}
@@ -323,23 +285,20 @@ export default function RocketSimulator() {
                         currentState={currentState}
                       />
                     </div>
-                    <p className="mt-2 text-[10px] font-mono text-muted-foreground text-center uppercase tracking-widest flex-shrink-0">
-                      Target: <span className="text-primary">{destinationPlanet}</span>
-                    </p>
-                  </div>
-                </TabsContent>
+                  </TabsContent>
 
-                <TabsContent value="altitude" className="mt-0 h-full overflow-hidden flex-1">
-                  <TrajectoryChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
-                </TabsContent>
+                  <TabsContent value="altitude" className="h-full overflow-hidden m-0">
+                    <TrajectoryChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
+                  </TabsContent>
 
-                <TabsContent value="velocity" className="mt-0 h-full overflow-hidden flex-1">
-                  <VelocityChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
-                </TabsContent>
+                  <TabsContent value="velocity" className="h-full overflow-hidden m-0">
+                    <VelocityChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
+                  </TabsContent>
 
-                <TabsContent value="forces" className="mt-0 h-full overflow-hidden flex-1">
-                  <ForcesChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
-                </TabsContent>
+                  <TabsContent value="forces" className="h-full overflow-hidden m-0">
+                    <ForcesChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
+                  </TabsContent>
+                </div>
               </Tabs>
             </div>
           </div>
