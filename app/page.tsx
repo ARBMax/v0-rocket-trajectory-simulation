@@ -226,7 +226,7 @@ export default function RocketSimulator() {
               }`}
             >
               {/* Telemetry */}
-              <div className="flex-shrink-0 pb-3 border-b border-border/30">
+              <div className="flex-shrink-0 pb-3 border-b border-border/30 mb-3">
                 <TelemetryDisplay
                   currentState={currentState}
                   result={result}
@@ -234,50 +234,27 @@ export default function RocketSimulator() {
                 />
               </div>
 
-              {/* Tabs */}
-              <Tabs defaultValue="visual" className="flex-1 flex flex-col overflow-hidden mt-3">
-                <TabsList className="w-full justify-start gap-0 bg-transparent border-b border-border/50 rounded-none p-0 h-auto flex-shrink-0">
-                  <TabsTrigger 
-                    value="visual" 
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
-                  >
-                    3D Rocket
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="trajectory"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
-                  >
-                    Trajectory
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="altitude"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
-                  >
-                    Altitude
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="velocity"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
-                  >
-                    Velocity
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="forces"
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-xs font-mono uppercase tracking-wider px-4 py-2"
-                  >
-                    Forces
-                  </TabsTrigger>
-                </TabsList>
-
-                <div className="flex-1 overflow-hidden mt-3">
-                  <TabsContent value="visual" className="h-full overflow-hidden m-0">
-                    <div className="h-full rounded border border-border/50 overflow-hidden bg-card/30">
+              {/* Horizontal Layout - Charts and Visualizations */}
+              <div className="flex-1 overflow-hidden grid grid-cols-3 gap-3">
+                {/* Left Column - Rocket Visual */}
+                <div className="overflow-hidden rounded border border-border/50 bg-card/30">
+                  <div className="h-full flex flex-col">
+                    <div className="text-[10px] font-mono uppercase tracking-wider px-3 py-2 border-b border-border/30 flex-shrink-0 text-muted-foreground">
+                      3D Rocket
+                    </div>
+                    <div className="flex-1 overflow-hidden">
                       <RocketVisual currentState={currentState} result={result} />
                     </div>
-                  </TabsContent>
+                  </div>
+                </div>
 
-                  <TabsContent value="trajectory" className="h-full overflow-hidden m-0">
-                    <div className="h-full rounded border border-border/50 overflow-hidden bg-black">
+                {/* Middle Column - Solar System Trajectory */}
+                <div className="overflow-hidden rounded border border-border/50 bg-black">
+                  <div className="h-full flex flex-col">
+                    <div className="text-[10px] font-mono uppercase tracking-wider px-3 py-2 border-b border-border/30 flex-shrink-0 text-muted-foreground">
+                      Mission Trajectory
+                    </div>
+                    <div className="flex-1 overflow-hidden">
                       <SolarSystem
                         destinationPlanet={destinationPlanet}
                         onSelectPlanet={setDestinationPlanet}
@@ -285,21 +262,47 @@ export default function RocketSimulator() {
                         currentState={currentState}
                       />
                     </div>
-                  </TabsContent>
-
-                  <TabsContent value="altitude" className="h-full overflow-hidden m-0">
-                    <TrajectoryChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
-                  </TabsContent>
-
-                  <TabsContent value="velocity" className="h-full overflow-hidden m-0">
-                    <VelocityChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
-                  </TabsContent>
-
-                  <TabsContent value="forces" className="h-full overflow-hidden m-0">
-                    <ForcesChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
-                  </TabsContent>
+                  </div>
                 </div>
-              </Tabs>
+
+                {/* Right Column - Charts Tab */}
+                <Tabs defaultValue="altitude" className="flex flex-col overflow-hidden rounded border border-border/50 bg-card/30">
+                  <TabsList className="w-full justify-start gap-0 bg-transparent border-b border-border/30 rounded-none p-0 h-auto flex-shrink-0 flex-wrap">
+                    <TabsTrigger 
+                      value="altitude"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-[9px] font-mono uppercase tracking-wider px-3 py-2 flex-1 min-w-fit"
+                    >
+                      Altitude
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="velocity"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-[9px] font-mono uppercase tracking-wider px-3 py-2 flex-1 min-w-fit"
+                    >
+                      Velocity
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="forces"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-[9px] font-mono uppercase tracking-wider px-3 py-2 flex-1 min-w-fit"
+                    >
+                      Forces
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <div className="flex-1 overflow-hidden">
+                    <TabsContent value="altitude" className="h-full m-0 overflow-hidden">
+                      <TrajectoryChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
+                    </TabsContent>
+
+                    <TabsContent value="velocity" className="h-full m-0 overflow-hidden">
+                      <VelocityChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
+                    </TabsContent>
+
+                    <TabsContent value="forces" className="h-full m-0 overflow-hidden">
+                      <ForcesChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
+                    </TabsContent>
+                  </div>
+                </Tabs>
+              </div>
             </div>
           </div>
         </main>
