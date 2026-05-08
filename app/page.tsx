@@ -221,87 +221,57 @@ export default function RocketSimulator() {
 
             {/* Main Visualization Area */}
             <div
-              className={`flex-1 overflow-hidden flex flex-col transition-all duration-500 delay-200 ${
+              className={`flex-1 overflow-y-auto flex flex-col transition-all duration-500 delay-200 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
               }`}
             >
-              {/* Telemetry */}
-              <div className="flex-shrink-0 pb-3 border-b border-border/30 mb-3">
-                <TelemetryDisplay
-                  currentState={currentState}
-                  result={result}
-                  theoretical={theoretical}
-                />
+              {/* Live Telemetry Section */}
+              <div className="flex-shrink-0 pb-4 mb-4">
+                <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                  Live Telemetry
+                </div>
+                <div className="h-56 rounded border border-border/50 overflow-hidden bg-card/30">
+                  <RocketVisual currentState={currentState} result={result} />
+                </div>
               </div>
 
-              {/* Horizontal Layout - Charts and Visualizations */}
-              <div className="flex-1 overflow-hidden grid grid-cols-3 gap-3">
-                {/* Left Column - Rocket Visual */}
-                <div className="overflow-hidden rounded border border-border/50 bg-card/30">
-                  <div className="h-full flex flex-col">
-                    <div className="text-[10px] font-mono uppercase tracking-wider px-3 py-2 border-b border-border/30 flex-shrink-0 text-muted-foreground">
-                      3D Rocket
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                      <RocketVisual currentState={currentState} result={result} />
-                    </div>
-                  </div>
+              {/* Mission Trajectory Section */}
+              <div className="flex-1 overflow-hidden flex flex-col pb-4 mb-4">
+                <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                  Mission Trajectory
                 </div>
-
-                {/* Middle Column - Solar System Trajectory */}
-                <div className="overflow-hidden rounded border border-border/50 bg-black">
-                  <div className="h-full flex flex-col">
-                    <div className="text-[10px] font-mono uppercase tracking-wider px-3 py-2 border-b border-border/30 flex-shrink-0 text-muted-foreground">
-                      Mission Trajectory
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                      <SolarSystem
-                        destinationPlanet={destinationPlanet}
-                        onSelectPlanet={setDestinationPlanet}
-                        result={result}
-                        currentState={currentState}
-                      />
-                    </div>
-                  </div>
+                <div className="flex-1 rounded border border-border/50 overflow-hidden bg-black min-h-0">
+                  <SolarSystem
+                    destinationPlanet={destinationPlanet}
+                    onSelectPlanet={setDestinationPlanet}
+                    result={result}
+                    currentState={currentState}
+                  />
                 </div>
+              </div>
 
-                {/* Right Column - Charts Tab */}
-                <Tabs defaultValue="altitude" className="flex flex-col overflow-hidden rounded border border-border/50 bg-card/30">
-                  <TabsList className="w-full justify-start gap-0 bg-transparent border-b border-border/30 rounded-none p-0 h-auto flex-shrink-0 flex-wrap">
-                    <TabsTrigger 
-                      value="altitude"
-                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-[9px] font-mono uppercase tracking-wider px-3 py-2 flex-1 min-w-fit"
-                    >
-                      Altitude
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="velocity"
-                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-[9px] font-mono uppercase tracking-wider px-3 py-2 flex-1 min-w-fit"
-                    >
-                      Velocity
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="forces"
-                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary text-[9px] font-mono uppercase tracking-wider px-3 py-2 flex-1 min-w-fit"
-                    >
-                      Forces
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <div className="flex-1 overflow-hidden">
-                    <TabsContent value="altitude" className="h-full m-0 overflow-hidden">
-                      <TrajectoryChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
-                    </TabsContent>
+              {/* Analysis Section */}
+              <div className="flex-shrink-0">
+                <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                  Analysis
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* AI Flight Advisor */}
+                  <AISuggestionPanel 
+                    params={params} 
+                    result={result}
+                    onApplySuggestion={(changes) => {
+                      Object.entries(changes).forEach(([key, value]) => {
+                        if (value !== undefined) {
+                          updateParam(key as keyof typeof params, value as number)
+                        }
+                      })
+                    }}
+                  />
 
-                    <TabsContent value="velocity" className="h-full m-0 overflow-hidden">
-                      <VelocityChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
-                    </TabsContent>
-
-                    <TabsContent value="forces" className="h-full m-0 overflow-hidden">
-                      <ForcesChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
-                    </TabsContent>
-                  </div>
-                </Tabs>
+                  {/* Theoretical Comparison */}
+                  <ComparisonPanel result={result} theoretical={theoretical} />
+                </div>
               </div>
             </div>
           </div>
