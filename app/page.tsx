@@ -152,19 +152,18 @@ export default function RocketSimulator() {
           </div>
         </div>
 
-        <main className="flex-1 p-6 overflow-hidden">
+        <main className="flex-1 overflow-hidden flex flex-col">
           {/* Fun Facts Banner */}
-          <div className="mb-6">
+          <div className="px-6 pt-4 pb-2 flex-shrink-0">
             <FunFactsBanner />
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[360px,1fr] h-[calc(100%-100px)] overflow-hidden">
+          <div className="flex-1 overflow-hidden flex gap-6 px-6 pb-6">
             {/* Left Sidebar - Controls */}
             <aside
-              className={`overflow-y-auto pr-2 transition-all duration-500 delay-100 ${
+              className={`w-80 overflow-y-auto transition-all duration-500 delay-100 flex-shrink-0 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
               }`}
-              style={{ maxHeight: 'calc(100vh - 300px)' }}
             >
               {/* Section Label */}
               <div className="sticky top-0 z-20 flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground bg-background/95 backdrop-blur-sm py-3 mb-4">
@@ -228,20 +227,12 @@ export default function RocketSimulator() {
 
             {/* Main Content Area */}
             <div
-              className={`space-y-5 overflow-y-auto transition-all duration-500 delay-200 ${
+              className={`flex-1 overflow-hidden flex flex-col transition-all duration-500 delay-200 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
               }`}
-              style={{ maxHeight: 'calc(100vh - 300px)' }}
             >
-              {/* Section Label */}
-              <div className="sticky top-0 z-20 flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground bg-background/95 backdrop-blur-sm py-3">
-                <div className="h-px flex-1 bg-border" />
-                <span>Live Telemetry</span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
-
-              {/* Telemetry Display */}
-              <div className="flex-shrink-0">
+              {/* Telemetry Display - Compact */}
+              <div className="flex-shrink-0 pb-4 border-b border-border/30">
                 <TelemetryDisplay
                   currentState={currentState}
                   result={result}
@@ -249,15 +240,8 @@ export default function RocketSimulator() {
                 />
               </div>
 
-              {/* Section Label */}
-              <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">
-                <div className="h-px flex-1 bg-border" />
-                <span>Visualization</span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
-
-              {/* Visualization Tabs */}
-              <Tabs defaultValue="visual" className="w-full flex flex-col">
+              {/* Visualization Tabs - Full Height */}
+              <Tabs defaultValue="visual" className="w-full flex-1 flex flex-col overflow-hidden mt-4">
                 <TabsList className="w-full justify-start gap-0 bg-transparent border-b border-border/50 rounded-none p-0 h-auto flex-shrink-0">
                   <TabsTrigger 
                     value="visual" 
@@ -285,8 +269,8 @@ export default function RocketSimulator() {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="visual" className="mt-4 flex flex-col gap-4 h-[calc(100vh-450px)] overflow-y-auto">
-                  <div className="h-80 rounded border border-border/50 overflow-hidden bg-card/30 flex-shrink-0">
+                <TabsContent value="visual" className="flex-1 overflow-hidden flex flex-col gap-3 mt-0">
+                  <div className="h-[420px] rounded border border-border/50 overflow-hidden bg-card/30 flex-shrink-0">
                     <RocketVisual currentState={currentState} result={result} />
                   </div>
                   
@@ -310,47 +294,18 @@ export default function RocketSimulator() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="altitude" className="mt-4 h-96">
+                <TabsContent value="altitude" className="mt-0 h-full overflow-hidden flex-1">
                   <TrajectoryChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
                 </TabsContent>
 
-                <TabsContent value="velocity" className="mt-4 h-96">
+                <TabsContent value="velocity" className="mt-0 h-full overflow-hidden flex-1">
                   <VelocityChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
                 </TabsContent>
 
-                <TabsContent value="forces" className="mt-4 h-96">
+                <TabsContent value="forces" className="mt-0 h-full overflow-hidden flex-1">
                   <ForcesChart result={result} currentIndex={result?.states.findIndex(s => s === currentState) ?? 0} />
                 </TabsContent>
               </Tabs>
-
-              {/* Section Label */}
-              <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">
-                <div className="h-px flex-1 bg-border" />
-                <span>Analysis</span>
-                <div className="h-px flex-1 bg-border" />
-              </div>
-
-              {/* Mission Status */}
-              <MissionIndicator result={result} destinationPlanet={destinationPlanet} />
-
-              {/* Analysis Grid */}
-              <div className="grid gap-4 lg:grid-cols-2">
-                {/* AI Suggestions */}
-                <AISuggestionPanel 
-                  params={params} 
-                  result={result}
-                  onApplySuggestion={(changes) => {
-                    Object.entries(changes).forEach(([key, value]) => {
-                      if (value !== undefined) {
-                        updateParam(key as keyof typeof params, value as number)
-                      }
-                    })
-                  }}
-                />
-
-                {/* Comparison Panel */}
-                <ComparisonPanel result={result} theoretical={theoretical} />
-              </div>
             </div>
           </div>
         </main>
