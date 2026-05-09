@@ -54,11 +54,6 @@ export default function RocketSimulator() {
     localStorage.removeItem("rocketSimUser")
   }
 
-  // Show login page if not authenticated
-  if (!isAuthenticated) {
-    return <LoginPage onLogin={handleLogin} />
-  }
-
   // Update time only on client to avoid hydration mismatch
   useEffect(() => {
     const updateTime = () => {
@@ -97,9 +92,13 @@ export default function RocketSimulator() {
     onTogglePlayback: togglePlayback,
     onReset: reset,
     onSpeedUp: () => setPlaybackSpeed(Math.min(5, playbackSpeed + 0.5)),
-    onSpeedDown: () => setPlaybackSpeed(Math.max(0.1, playbackSpeed - 0.5)),
-    isRunning,
+    onSpeedDown: () => setPlaybackSpeed(Math.max(0.25, playbackSpeed - 0.5)),
   })
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={handleLogin} />
+  }
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
