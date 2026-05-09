@@ -21,8 +21,11 @@ import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { Rocket, Radio, Clock, Shield } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FunFactsBanner } from "@/components/fun-facts-banner"
+import { LoginPage } from "@/components/login-page"
 
 export default function RocketSimulator() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [currentUser, setCurrentUser] = useState<string | null>(null)
   const [showSplash, setShowSplash] = useState(true)
   const [contentVisible, setContentVisible] = useState(false)
   const [destinationPlanet, setDestinationPlanet] = useState("Mars")
@@ -30,8 +33,31 @@ export default function RocketSimulator() {
   const [currentDate, setCurrentDate] = useState("--- -- ----")
   const [timezone, setTimezone] = useState("UTC")
 
-  // Update time only on client to avoid hydration mismatch
+  // Check if user is already logged in (from localStorage)
   useEffect(() => {
+    const savedUser = localStorage.getItem("rocketSimUser")
+    if (savedUser) {
+      setIsAuthenticated(true)
+      setCurrentUser(savedUser)
+    }
+  }, [])
+
+  const handleLogin = (username: string) => {
+    setIsAuthenticated(true)
+    setCurrentUser(username)
+    localStorage.setItem("rocketSimUser", username)
+  }
+
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    setCurrentUser(null)
+    localStorage.removeItem("rocketSimUser")
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={handleLogin} />
+  }
     const updateTime = () => {
       const now = new Date()
       setCurrentTime(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }))
@@ -128,6 +154,17 @@ export default function RocketSimulator() {
                     <span className="tabular-nums text-foreground">{currentTime}</span>
                     <span className="text-[9px] tracking-wider text-muted-foreground">{currentDate}</span>
                     <span className="text-[9px] tracking-wider text-primary/70">{timezone}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground font-mono text-xs border-l border-border/50 pl-4">
+                  <div className="flex flex-col items-end">
+                    <span className="text-foreground text-[9px] tracking-wider">User: <span className="text-primary">{currentUser}</span></span>
+                    <button
+                      onClick={handleLogout}
+                      className="text-[9px] text-primary hover:text-primary/70 transition-colors uppercase tracking-wider"
+                    >
+                      Logout
+                    </button>
                   </div>
                 </div>
               </div>
