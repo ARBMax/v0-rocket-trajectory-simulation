@@ -140,12 +140,10 @@ function RocketDot({
   destinationOrbit,
   progress,
   active,
-  planetAngle,
 }: {
   destinationOrbit: number
   progress: number
   active: boolean
-  planetAngle: number
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const glowRef = useRef<THREE.Mesh>(null)
@@ -155,19 +153,11 @@ function RocketDot({
   const semiMajor = (startR + endR) / 2
   const semiMinor = Math.sqrt(startR * endR) * 0.85
 
-  // Map progress (0..1) directly to angle (0..PI) for full arc travel
+  // Map progress (0..1) directly to angle (0..PI) for smooth arc travel
+  // Rocket travels along Hohmann transfer from Earth to destination orbit
   const angle = progress * Math.PI
-  let x = Math.cos(angle) * semiMajor
-  let z = Math.sin(angle) * semiMinor
-
-  // At progress >= 0.90, smoothly interpolate to destination planet's actual position
-  if (progress >= 0.90) {
-    const t = Math.min(1, (progress - 0.90) / 0.10) // Smooth interpolation from 0.90 to 1.0
-    const destX = Math.cos(planetAngle) * destinationOrbit
-    const destZ = Math.sin(planetAngle) * destinationOrbit
-    x = x * (1 - t) + destX * t
-    z = z * (1 - t) + destZ * t
-  }
+  const x = Math.cos(angle) * semiMajor
+  const z = Math.sin(angle) * semiMinor
 
   useFrame(({ clock }) => {
     if (glowRef.current) {
@@ -202,16 +192,14 @@ function RocketDot({
 }
 
 // ─── Planet ───────────────────────────────────────────────────────────────────
-function PlanetWithAngleTracking({
+function Planet({
   data,
   isDestination,
   onClick,
-  onAngleUpdate,
 }: {
   data: (typeof PLANETS)[0]
   isDestination: boolean
   onClick: () => void
-  onAngleUpdate?: (angle: number) => void
 }) {
   const meshRef  = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
@@ -223,7 +211,6 @@ function PlanetWithAngleTracking({
     if (groupRef.current) {
       groupRef.current.position.x = Math.cos(angleRef.current) * data.orbitRadius
       groupRef.current.position.z = Math.sin(angleRef.current) * data.orbitRadius
-      if (onAngleUpdate) onAngleUpdate(angleRef.current)
     }
     if (meshRef.current) meshRef.current.rotation.y += delta * 0.4
   })
@@ -307,7 +294,6 @@ function Scene({
 }) {
   const destData = PLANETS.find(p => p.name === destinationPlanet) ?? PLANETS[3]
   const hasJourney = rocketProgress > 0
-  const planetAngleRef = useRef(0)
 
   return (
     <>
@@ -337,17 +323,15 @@ function Scene({
         destinationOrbit={destData.orbitRadius}
         progress={rocketProgress}
         active={hasJourney}
-        planetAngle={planetAngleRef.current}
       />
 
       {/* Planets */}
       {PLANETS.map(p => (
-        <PlanetWithAngleTracking
+        <Planet
           key={p.name}
           data={p}
           isDestination={destinationPlanet === p.name}
           onClick={() => onSelectPlanet(p.name)}
-          onAngleUpdate={destinationPlanet === p.name ? (angle) => planetAngleRef.current = angle : undefined}
         />
       ))}
 
