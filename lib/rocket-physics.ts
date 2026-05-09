@@ -218,7 +218,7 @@ export function getMaxFuelMass(params: Partial<RocketParams>): number {
   // Use thrust as primary indicator of rocket size
   const thrust = params.thrust || 1
   
-  // Map thrust ranges to fuel mass limits
+  // Map thrust ranges to fuel mass limits (realistic for various rocket classes)
   if (thrust < 10) {
     // Model rockets: small fuel capacity
     return 0.5 // kg
@@ -232,11 +232,17 @@ export function getMaxFuelMass(params: Partial<RocketParams>): number {
     // Medium rockets
     return 200 // kg
   } else if (thrust < 50000) {
-    // Large rockets
+    // Large rockets (e.g., Falcon 9 first stage: ~528,000 kN, holds ~111,000 kg fuel per tank)
     return 500 // kg
+  } else if (thrust < 500000) {
+    // Heavy-lift rockets (e.g., Falcon Heavy: ~2,267,000 kN)
+    return 100000 // kg
+  } else if (thrust < 2000000) {
+    // Super heavy-lift (e.g., Ariane 5: ~260,000 kN)
+    return 240000 // kg
   } else {
-    // Extra large / heavy lift rockets
-    return 2000 // kg
+    // Mega rockets (e.g., Saturn V: ~3,400,000 kN, Space Shuttle: ~2,900,000 kg fuel)
+    return 3000000 // kg
   }
 }
 
