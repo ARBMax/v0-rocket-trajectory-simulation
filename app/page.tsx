@@ -58,6 +58,9 @@ export default function RocketSimulator() {
   if (!isAuthenticated) {
     return <LoginPage onLogin={handleLogin} />
   }
+
+  // Update time only on client to avoid hydration mismatch
+  useEffect(() => {
     const updateTime = () => {
       const now = new Date()
       setCurrentTime(now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }))
