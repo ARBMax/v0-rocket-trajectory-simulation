@@ -52,7 +52,7 @@ export function useRocketSimulation(userEmail?: string) {
     const simResult = simulateRocket(params, 0.01, 300)
     setResult(simResult)
     setCurrentIndex(0)
-    setIsRunning(false)
+    setIsRunning(true)
   }, [params])
 
   // Animation loop
