@@ -9,7 +9,7 @@ import {
   ROCKET_PRESETS,
 } from "@/lib/rocket-physics"
 
-export function useRocketSimulation() {
+export function useRocketSimulation(userEmail?: string) {
   const [params, setParams] = useState<RocketParams>(ROCKET_PRESETS["Model Rocket"])
   const [result, setResult] = useState<SimulationResult | null>(null)
   const [isRunning, setIsRunning] = useState(false)
@@ -19,6 +19,33 @@ export function useRocketSimulation() {
 
   const animationRef = useRef<number | null>(null)
   const lastTimeRef = useRef<number>(0)
+
+  // Generate user-specific storage key
+  const getStorageKey = (key: string) => {
+    if (!userEmail) return key
+    return `${userEmail}:${key}`
+  }
+
+  // Load user-specific params from localStorage on mount
+  useEffect(() => {
+    if (!userEmail) return
+    const storageKey = getStorageKey("rocketParams")
+    const savedParams = localStorage.getItem(storageKey)
+    if (savedParams) {
+      try {
+        setParams(JSON.parse(savedParams))
+      } catch (e) {
+        console.log("[v0] Failed to parse saved params for user:", userEmail)
+      }
+    }
+  }, [userEmail])
+
+  // Save params to user-specific localStorage
+  const saveParamsToStorage = useCallback((newParams: RocketParams) => {
+    if (!userEmail) return
+    const storageKey = getStorageKey("rocketParams")
+    localStorage.setItem(storageKey, JSON.stringify(newParams))
+  }, [userEmail, getStorageKey])
 
   // Run simulation
   const runSimulation = useCallback(() => {
@@ -90,22 +117,26 @@ export function useRocketSimulation() {
   // Update params
   const updateParam = useCallback(
     <K extends keyof RocketParams>(key: K, value: RocketParams[K]) => {
-      setParams((prev) => ({ ...prev, [key]: value }))
+      const newParams = { ...params, [key]: value }
+      setParams(newParams)
+      saveParamsToStorage(newParams)
       setResult(null)
       setCurrentIndex(0)
     },
-    []
+    [params, saveParamsToStorage]
   )
 
   // Select preset
   const selectPreset = useCallback((presetName: string) => {
     setSelectedPreset(presetName)
     if (ROCKET_PRESETS[presetName]) {
-      setParams(ROCKET_PRESETS[presetName])
+      const newParams = ROCKET_PRESETS[presetName]
+      setParams(newParams)
+      saveParamsToStorage(newParams)
       setResult(null)
       setCurrentIndex(0)
     }
-  }, [])
+  }, [saveParamsToStorage])
 
   // Get theoretical values
   const theoretical = calculateTheoreticalValues(params)

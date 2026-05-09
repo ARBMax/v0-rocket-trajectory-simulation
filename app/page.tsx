@@ -49,6 +49,17 @@ export default function RocketSimulator() {
   }
 
   const handleLogout = () => {
+    // Clear all user-specific data from localStorage
+    if (currentUser) {
+      const userPrefix = `${currentUser}:`
+      // Clear user-specific keys
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith(userPrefix)) {
+          localStorage.removeItem(key)
+        }
+      }
+    }
     setIsAuthenticated(false)
     setCurrentUser(null)
     localStorage.removeItem("rocketSimUser")
@@ -80,7 +91,7 @@ export default function RocketSimulator() {
     reset,
     updateParam,
     selectPreset,
-  } = useRocketSimulation()
+  } = useRocketSimulation(currentUser || undefined)
 
   const handleSplashComplete = () => {
     setShowSplash(false)
