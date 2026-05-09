@@ -153,7 +153,8 @@ function RocketDot({
   const semiMajor = (startR + endR) / 2
   const semiMinor = Math.sqrt(startR * endR) * 0.85
 
-  // Map progress → angle on the arc
+  // Map progress (0..1) directly to angle (0..PI) for full arc travel
+  // This ensures the rocket reaches the destination planet at progress = 1.0
   const angle = progress * Math.PI
   const x = Math.cos(angle) * semiMajor
   const z = Math.sin(angle) * semiMinor
@@ -361,31 +362,15 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
     const currentIndex = result.states.indexOf(currentState)
     if (currentIndex < 0) return 0
     
-    // Map flight phases to progress:
-    // 0.0-0.4: Powered flight (acceleration to burnout)
-    // 0.4-0.7: Coasting (ascending to apogee)
-    // 0.7-1.0: Descending (after apogee, traveling to destination)
-    
+    // Normalize progress across entire simulation duration
+    // This maps the complete flight (launch → burnout → apogee → descent → landing)
+    // to the full Hohmann transfer arc from Earth to destination
     const totalStates = result.states.length - 1
-    const baseProgress = currentIndex / totalStates
+    const normalizedProgress = currentIndex / totalStates
     
-    // Get the current flight phase
-    const phase = currentState.phase
-    
-    // Stretch the progress across the journey
-    let journeyProgress = 0
-    if (phase === "powered") {
-      // First 40% of journey during powered phase
-      journeyProgress = baseProgress * 0.4
-    } else if (phase === "coasting") {
-      // Next 30% during coasting to apogee
-      journeyProgress = 0.4 + (baseProgress * 0.3)
-    } else {
-      // Final 30% during descent phase (traveling to destination)
-      journeyProgress = 0.7 + (baseProgress * 0.3)
-    }
-    
-    return Math.min(1, journeyProgress)
+    // Stretch the progress so the rocket actually reaches the destination
+    // The journey completes when normalizedProgress reaches 1.0
+    return Math.min(1, normalizedProgress)
   }, [result, currentState])
 
   return (
