@@ -351,8 +351,8 @@ interface SolarSystemProps {
 }
 
 export function SolarSystem({ destinationPlanet, onSelectPlanet, result, currentState }: SolarSystemProps) {
-  // Map simulation progress (0→maxHeight→landing) to journey fraction (0→1)
-  // Extend beyond apogee so the rocket travels full arc to destination
+  // Map simulation progress to journey fraction (0→1)
+  // The rocket should travel the full arc to destination based on the flight phases
   const rocketProgress = useMemo(() => {
     if (!result || !currentState) return 0
     if (result.states.length < 2) return 0
@@ -361,12 +361,31 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
     const currentIndex = result.states.indexOf(currentState)
     if (currentIndex < 0) return 0
     
-    // Map the entire simulation duration (launch → landing) to 0 → 1
-    // This makes the rocket travel the full Hohmann arc from Earth to destination
-    const totalStates = result.states.length - 1
-    const progress = currentIndex / totalStates
+    // Map flight phases to progress:
+    // 0.0-0.4: Powered flight (acceleration to burnout)
+    // 0.4-0.7: Coasting (ascending to apogee)
+    // 0.7-1.0: Descending (after apogee, traveling to destination)
     
-    return Math.min(1, progress)
+    const totalStates = result.states.length - 1
+    const baseProgress = currentIndex / totalStates
+    
+    // Get the current flight phase
+    const phase = currentState.phase
+    
+    // Stretch the progress across the journey
+    let journeyProgress = 0
+    if (phase === "powered") {
+      // First 40% of journey during powered phase
+      journeyProgress = baseProgress * 0.4
+    } else if (phase === "coasting") {
+      // Next 30% during coasting to apogee
+      journeyProgress = 0.4 + (baseProgress * 0.3)
+    } else {
+      // Final 30% during descent phase (traveling to destination)
+      journeyProgress = 0.7 + (baseProgress * 0.3)
+    }
+    
+    return Math.min(1, journeyProgress)
   }, [result, currentState])
 
   return (
