@@ -10,18 +10,19 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
+  const [isSignup, setIsSignup] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setLoading(true)
-
-    // Email validation regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
     // Simple validation
     if (!email.trim() || !password.trim()) {
@@ -47,6 +48,57 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       }
       setLoading(false)
     }, 500)
+  }
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+
+    // Validation
+    if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
+      setError("Please fill in all fields")
+      setLoading(false)
+      return
+    }
+
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address")
+      setLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters")
+      setLoading(false)
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      setLoading(false)
+      return
+    }
+
+    // Simulate signup delay
+    setTimeout(() => {
+      // For demo purposes, accept valid credentials
+      // In production, this would create an account in the backend
+      if (emailRegex.test(email) && password.length >= 6 && password === confirmPassword) {
+        onLogin(email)
+      } else {
+        setError("Failed to create account")
+      }
+      setLoading(false)
+    }, 500)
+  }
+
+  const handleModeSwitch = () => {
+    setIsSignup(!isSignup)
+    setEmail("")
+    setPassword("")
+    setConfirmPassword("")
+    setError("")
   }
 
   return (
@@ -80,10 +132,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             <p className="text-xs font-mono uppercase tracking-widest text-muted-foreground text-center">
               Rocket Simulation Engine
             </p>
+            <p className="text-xs font-mono uppercase tracking-widest text-primary/70 text-center mt-2">
+              {isSignup ? "Create Account" : "Launch Mission"}
+            </p>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
             {/* Email */}
             <div className="space-y-2">
               <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
@@ -120,6 +175,26 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               />
             </div>
 
+            {/* Confirm Password - Only for signup */}
+            {isSignup && (
+              <div className="space-y-2">
+                <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                  Confirm Password
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Confirm password"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value)
+                    setError("")
+                  }}
+                  disabled={loading}
+                  className="font-mono text-sm"
+                />
+              </div>
+            )}
+
             {/* Error message */}
             {error && (
               <div className="p-3 rounded bg-destructive/10 border border-destructive/30 text-destructive text-xs font-mono">
@@ -133,20 +208,36 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               disabled={loading}
               className="w-full font-mono uppercase tracking-wider"
             >
-              {loading ? "Logging in..." : "Launch Mission"}
+              {loading ? (isSignup ? "Creating Account..." : "Logging in...") : (isSignup ? "Create Account" : "Launch Mission")}
             </Button>
           </form>
 
-          {/* Demo credentials hint */}
-          <div className="mt-6 p-4 rounded bg-background/50 border border-border/30">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
-              Demo Credentials
+          {/* Toggle to signup/login */}
+          <div className="mt-6 text-center">
+            <p className="text-xs font-mono text-muted-foreground">
+              {isSignup ? "Already have an account?" : "Don&apos;t have an account?"}
+              <button
+                onClick={handleModeSwitch}
+                disabled={loading}
+                className="ml-2 text-primary hover:text-primary/80 transition-colors uppercase tracking-wider font-semibold"
+              >
+                {isSignup ? "Sign In" : "Create Account"}
+              </button>
             </p>
-            <div className="space-y-1 text-[10px] font-mono text-foreground/70">
-              <p>Email: <span className="text-primary">demo@example.com</span></p>
-              <p>Password: <span className="text-primary">demo123</span></p>
-            </div>
           </div>
+
+          {/* Demo credentials hint - Only show in login mode */}
+          {!isSignup && (
+            <div className="mt-6 p-4 rounded bg-background/50 border border-border/30">
+              <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2">
+                Demo Credentials
+              </p>
+              <div className="space-y-1 text-[10px] font-mono text-foreground/70">
+                <p>Email: <span className="text-primary">demo@example.com</span></p>
+                <p>Password: <span className="text-primary">demo123</span></p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
