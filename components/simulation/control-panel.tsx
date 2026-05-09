@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { RocketParams, ROCKET_PRESETS } from "@/lib/rocket-physics"
+import { RocketParams, ROCKET_PRESETS, getMaxFuelMass } from "@/lib/rocket-physics"
 import { PLANETS } from "@/components/simulation/solar-system"
 import { GuidanceBadges } from "@/components/guidance-badges"
 import { Play, Pause, RotateCcw, Rocket, ChevronRight, Globe } from "lucide-react"
@@ -42,12 +42,14 @@ export function ControlPanel({
   onSetPlaybackSpeed,
   onSelectDestination,
 }: ControlPanelProps) {
+  const maxFuelMass = getMaxFuelMass(params)
+  
   const parameterGroups = [
     {
       label: "Mass Configuration",
       params: [
         { key: "mass" as const, label: "Dry Mass", unit: "kg", min: 0.01, max: 1000, step: 0.01 },
-        { key: "fuelMass" as const, label: "Fuel Mass", unit: "kg", min: 0.01, max: 500, step: 0.01 },
+        { key: "fuelMass" as const, label: "Fuel Mass", unit: "kg", min: 0.01, max: maxFuelMass, step: 0.01 },
       ],
     },
     {

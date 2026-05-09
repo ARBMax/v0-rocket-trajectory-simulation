@@ -213,6 +213,33 @@ export function calculateTheoreticalValues(params: RocketParams): {
   }
 }
 
+// Calculate max fuel mass based on rocket parameters
+export function getMaxFuelMass(params: Partial<RocketParams>): number {
+  // Use thrust as primary indicator of rocket size
+  const thrust = params.thrust || 1
+  
+  // Map thrust ranges to fuel mass limits
+  if (thrust < 10) {
+    // Model rockets: small fuel capacity
+    return 0.5 // kg
+  } else if (thrust < 100) {
+    // High-power model rockets
+    return 5 // kg
+  } else if (thrust < 1000) {
+    // Small commercial rockets
+    return 50 // kg
+  } else if (thrust < 10000) {
+    // Medium rockets
+    return 200 // kg
+  } else if (thrust < 50000) {
+    // Large rockets
+    return 500 // kg
+  } else {
+    // Extra large / heavy lift rockets
+    return 2000 // kg
+  }
+}
+
 // Preset rocket configurations
 export const ROCKET_PRESETS: Record<string, RocketParams> = {
   "Model Rocket": {
