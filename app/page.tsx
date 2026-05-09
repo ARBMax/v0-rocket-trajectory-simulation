@@ -42,10 +42,10 @@ export default function RocketSimulator() {
     }
   }, [])
 
-  const handleLogin = (username: string) => {
+  const handleLogin = (email: string) => {
     setIsAuthenticated(true)
-    setCurrentUser(username)
-    localStorage.setItem("rocketSimUser", username)
+    setCurrentUser(email)
+    localStorage.setItem("rocketSimUser", email)
   }
 
   const handleLogout = () => {
@@ -161,7 +161,7 @@ export default function RocketSimulator() {
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground font-mono text-xs border-l border-border/50 pl-4">
                   <div className="flex flex-col items-end">
-                    <span className="text-foreground text-[9px] tracking-wider">User: <span className="text-primary">{currentUser}</span></span>
+                    <span className="text-foreground text-[9px] tracking-wider">Email: <span className="text-primary">{currentUser}</span></span>
                     <button
                       onClick={handleLogout}
                       className="text-[9px] text-primary hover:text-primary/70 transition-colors uppercase tracking-wider"

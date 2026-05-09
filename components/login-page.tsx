@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input"
 import { Rocket } from "lucide-react"
 
 interface LoginPageProps {
-  onLogin: (username: string) => void
+  onLogin: (email: string) => void
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
-  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -20,21 +20,30 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     setError("")
     setLoading(true)
 
+    // Email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
     // Simple validation
-    if (!username.trim() || !password.trim()) {
-      setError("Please enter both username and password")
+    if (!email.trim() || !password.trim()) {
+      setError("Please enter both email and password")
+      setLoading(false)
+      return
+    }
+
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address")
       setLoading(false)
       return
     }
 
     // Simulate login delay
     setTimeout(() => {
-      // For demo purposes, accept any non-empty credentials
+      // For demo purposes, accept any valid email and password >= 6 chars
       // In production, this would verify against a backend
-      if (username.length >= 3 && password.length >= 6) {
-        onLogin(username)
+      if (emailRegex.test(email) && password.length >= 6) {
+        onLogin(email)
       } else {
-        setError("Username must be at least 3 characters, password at least 6 characters")
+        setError("Invalid email format or password too short")
       }
       setLoading(false)
     }, 500)
@@ -75,17 +84,17 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
           {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
-            {/* Username */}
+            {/* Email */}
             <div className="space-y-2">
               <label className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                Username
+                Email Address
               </label>
               <Input
-                type="text"
-                placeholder="Enter username"
-                value={username}
+                type="email"
+                placeholder="Enter your email"
+                value={email}
                 onChange={(e) => {
-                  setUsername(e.target.value)
+                  setEmail(e.target.value)
                   setError("")
                 }}
                 disabled={loading}
@@ -134,7 +143,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               Demo Credentials
             </p>
             <div className="space-y-1 text-[10px] font-mono text-foreground/70">
-              <p>Username: <span className="text-primary">demo</span></p>
+              <p>Email: <span className="text-primary">demo@example.com</span></p>
               <p>Password: <span className="text-primary">demo123</span></p>
             </div>
           </div>
