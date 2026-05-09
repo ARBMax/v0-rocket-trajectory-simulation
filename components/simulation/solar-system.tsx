@@ -196,10 +196,12 @@ function Planet({
   data,
   isDestination,
   onClick,
+  playbackSpeed = 1,
 }: {
   data: (typeof PLANETS)[0]
   isDestination: boolean
   onClick: () => void
+  playbackSpeed: number
 }) {
   const meshRef  = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
@@ -207,12 +209,12 @@ function Planet({
   const angleRef = useRef(Math.random() * Math.PI * 2)
 
   useFrame((_, delta) => {
-    angleRef.current += data.speed * delta * 0.5
+    angleRef.current += data.speed * delta * 0.5 * playbackSpeed
     if (groupRef.current) {
       groupRef.current.position.x = Math.cos(angleRef.current) * data.orbitRadius
       groupRef.current.position.z = Math.sin(angleRef.current) * data.orbitRadius
     }
-    if (meshRef.current) meshRef.current.rotation.y += delta * 0.4
+    if (meshRef.current) meshRef.current.rotation.y += delta * 0.4 * playbackSpeed
   })
 
   return (
@@ -287,10 +289,12 @@ function Scene({
   destinationPlanet,
   onSelectPlanet,
   rocketProgress,
+  playbackSpeed = 1,
 }: {
   destinationPlanet: string
   onSelectPlanet: (name: string) => void
   rocketProgress: number
+  playbackSpeed: number
 }) {
   const destData = PLANETS.find(p => p.name === destinationPlanet) ?? PLANETS[3]
   const hasJourney = rocketProgress > 0
@@ -332,6 +336,7 @@ function Scene({
           data={p}
           isDestination={destinationPlanet === p.name}
           onClick={() => onSelectPlanet(p.name)}
+          playbackSpeed={playbackSpeed}
         />
       ))}
 
@@ -348,7 +353,7 @@ interface SolarSystemProps {
   currentState?: SimulationState | null
 }
 
-export function SolarSystem({ destinationPlanet, onSelectPlanet, result, currentState }: SolarSystemProps) {
+export function SolarSystem({ destinationPlanet, onSelectPlanet, result, currentState, playbackSpeed = 1 }: SolarSystemProps & { playbackSpeed?: number }) {
   // Map simulation progress to journey fraction (0→1)
   // The rocket should travel the full arc to destination based on the flight phases
   const rocketProgress = useMemo(() => {
@@ -401,6 +406,7 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
           destinationPlanet={destinationPlanet}
           onSelectPlanet={onSelectPlanet}
           rocketProgress={rocketProgress}
+          playbackSpeed={playbackSpeed}
         />
       </Canvas>
     </div>

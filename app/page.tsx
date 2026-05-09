@@ -354,6 +354,7 @@ export default function RocketSimulator() {
                         onSelectPlanet={setDestinationPlanet}
                         result={result}
                         currentState={currentState}
+                        playbackSpeed={playbackSpeed}
                       />
                     </div>
                     <p className="mt-2 text-[10px] font-mono text-muted-foreground text-center uppercase tracking-widest">
