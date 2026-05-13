@@ -101,8 +101,9 @@ MISSION RESULTS
 Maximum Height          : ${result.maxHeight.toFixed(2)} m
 Maximum Velocity        : ${result.maxVelocity.toFixed(2)} m/s
 Apogee Time             : ${result.apogeeTime.toFixed(2)} s
-Total Flight Time       : ${result.totalTime.toFixed(2)} s
-Total Distance Traveled : ${result.totalDistance.toFixed(2)} m
+Total Flight Time       : ${result.flightTime.toFixed(2)} s
+Burnout Time            : ${result.burnoutTime.toFixed(2)} s
+Burnout Height          : ${result.burnoutHeight.toFixed(2)} m
 Simulation Points       : ${result.states.length}
 
 TRAJECTORY ANALYSIS
