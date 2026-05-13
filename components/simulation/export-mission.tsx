@@ -29,10 +29,10 @@ export function ExportMission({ result, params, destinationPlanet }: ExportMissi
           ? {
               maxHeight: result.maxHeight,
               maxVelocity: result.maxVelocity,
-              totalTime: result.totalTime,
+              flightTime: result.flightTime,
               apogeeTime: result.apogeeTime,
-              landingTime: result.landingTime,
-              totalDistance: result.totalDistance,
+              burnoutTime: result.burnoutTime,
+              burnoutHeight: result.burnoutHeight,
               stateCount: result.states.length,
             }
           : null,
@@ -58,7 +58,7 @@ export function ExportMission({ result, params, destinationPlanet }: ExportMissi
 
       let csv = "Time (s),Height (m),Velocity (m/s),Acceleration (m/s²),Mass (kg),Thrust (N)\n"
       result.states.forEach((state, i) => {
-        const time = (i * result.totalTime) / result.states.length
+        const time = (i * result.flightTime) / result.states.length
         csv += `${time.toFixed(2)},${state.height.toFixed(2)},${state.velocity.toFixed(2)},${state.acceleration.toFixed(2)},${state.mass.toFixed(2)},${state.thrust.toFixed(2)}\n`
       })
 
