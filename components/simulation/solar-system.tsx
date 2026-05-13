@@ -140,12 +140,10 @@ function RocketDot({
   destinationOrbit,
   progress,
   active,
-  planetPos,
 }: {
   destinationOrbit: number
   progress: number
   active: boolean
-  planetPos?: { x: number; z: number }
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const glowRef = useRef<THREE.Mesh>(null)
@@ -156,16 +154,9 @@ function RocketDot({
   const semiMinor = Math.sqrt(startR * endR) * 0.85
 
   // Map progress (0..1) directly to angle (0..PI) for smooth arc travel
-  let angle = progress * Math.PI
-  let x = Math.cos(angle) * semiMajor
-  let z = Math.sin(angle) * semiMinor
-
-  // At the end (progress >= 0.95), interpolate to planet's actual position
-  if (progress >= 0.95 && planetPos) {
-    const t = Math.min(1, (progress - 0.95) / 0.05)
-    x = x * (1 - t) + planetPos.x * t
-    z = z * (1 - t) + planetPos.z * t
-  }
+  const angle = progress * Math.PI
+  const x = Math.cos(angle) * semiMajor
+  const z = Math.sin(angle) * semiMinor
 
   useFrame(({ clock }) => {
     if (glowRef.current) {
@@ -205,13 +196,11 @@ function Planet({
   isDestination,
   onClick,
   playbackSpeed = 1,
-  onPositionUpdate,
 }: {
   data: (typeof PLANETS)[0]
   isDestination: boolean
   onClick: () => void
   playbackSpeed: number
-  onPositionUpdate?: (pos: { x: number; z: number }) => void
 }) {
   const meshRef  = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
@@ -223,12 +212,6 @@ function Planet({
     if (groupRef.current) {
       groupRef.current.position.x = Math.cos(angleRef.current) * data.orbitRadius
       groupRef.current.position.z = Math.sin(angleRef.current) * data.orbitRadius
-      if (onPositionUpdate) {
-        onPositionUpdate({
-          x: groupRef.current.position.x,
-          z: groupRef.current.position.z,
-        })
-      }
     }
     if (meshRef.current) meshRef.current.rotation.y += delta * 0.4 * playbackSpeed
   })
@@ -314,7 +297,6 @@ function Scene({
 }) {
   const destData = PLANETS.find(p => p.name === destinationPlanet) ?? PLANETS[3]
   const hasJourney = rocketProgress > 0
-  const planetPosRef = useRef({ x: 0, z: 0 })
 
   return (
     <>
@@ -344,7 +326,6 @@ function Scene({
         destinationOrbit={destData.orbitRadius}
         progress={rocketProgress}
         active={hasJourney}
-        planetPos={planetPosRef.current}
       />
 
       {/* Planets */}
@@ -355,7 +336,6 @@ function Scene({
           isDestination={destinationPlanet === p.name}
           onClick={() => onSelectPlanet(p.name)}
           playbackSpeed={playbackSpeed}
-          onPositionUpdate={destinationPlanet === p.name ? (pos) => (planetPosRef.current = pos) : undefined}
         />
       ))}
 
