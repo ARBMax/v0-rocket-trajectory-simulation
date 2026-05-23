@@ -140,10 +140,12 @@ function RocketDot({
   destinationOrbit,
   progress,
   active,
+  planetOrbitAngle,
 }: {
   destinationOrbit: number
   progress: number
   active: boolean
+  planetOrbitAngle?: number
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const glowRef = useRef<THREE.Mesh>(null)
@@ -153,10 +155,20 @@ function RocketDot({
   const semiMajor = (startR + endR) / 2
   const semiMinor = Math.sqrt(startR * endR) * 0.85
 
-  // Map progress (0..1) directly to angle (0..PI) for smooth arc travel
-  const angle = progress * Math.PI
-  const x = Math.cos(angle) * semiMajor
-  const z = Math.sin(angle) * semiMinor
+  // Map progress (0..1) to angle on the arc (0..PI)
+  const arcAngle = progress * Math.PI
+  let x = Math.cos(arcAngle) * semiMajor
+  let z = Math.sin(arcAngle) * semiMinor
+
+  // At the final approach (progress > 0.85), transition to planet's orbital position
+  if (progress > 0.85 && planetOrbitAngle !== undefined) {
+    const approachFactor = (progress - 0.85) / 0.15 // 0 to 1 from 0.85 to 1.0
+    // Interpolate from arc endpoint to planet's actual position
+    const destX = Math.cos(planetOrbitAngle) * destinationOrbit
+    const destZ = Math.sin(planetOrbitAngle) * destinationOrbit
+    x = x + (destX - x) * approachFactor
+    z = z + (destZ - z) * approachFactor
+  }
 
   useFrame(({ clock }) => {
     if (glowRef.current) {
@@ -196,11 +208,13 @@ function Planet({
   isDestination,
   onClick,
   playbackSpeed = 1,
+  onAngleUpdate,
 }: {
   data: (typeof PLANETS)[0]
   isDestination: boolean
   onClick: () => void
   playbackSpeed: number
+  onAngleUpdate?: (angle: number) => void
 }) {
   const meshRef  = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
@@ -212,6 +226,7 @@ function Planet({
     if (groupRef.current) {
       groupRef.current.position.x = Math.cos(angleRef.current) * data.orbitRadius
       groupRef.current.position.z = Math.sin(angleRef.current) * data.orbitRadius
+      if (onAngleUpdate) onAngleUpdate(angleRef.current)
     }
     if (meshRef.current) meshRef.current.rotation.y += delta * 0.4 * playbackSpeed
   })
@@ -297,6 +312,7 @@ function Scene({
 }) {
   const destData = PLANETS.find(p => p.name === destinationPlanet) ?? PLANETS[3]
   const hasJourney = rocketProgress > 0
+  const planetAngleRef = useRef(0)
 
   return (
     <>
@@ -326,6 +342,7 @@ function Scene({
         destinationOrbit={destData.orbitRadius}
         progress={rocketProgress}
         active={hasJourney}
+        planetOrbitAngle={planetAngleRef.current}
       />
 
       {/* Planets */}
@@ -336,6 +353,7 @@ function Scene({
           isDestination={destinationPlanet === p.name}
           onClick={() => onSelectPlanet(p.name)}
           playbackSpeed={playbackSpeed}
+          onAngleUpdate={destinationPlanet === p.name ? (angle) => (planetAngleRef.current = angle) : undefined}
         />
       ))}
 
