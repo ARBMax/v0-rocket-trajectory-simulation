@@ -4,7 +4,6 @@ import { RocketParams } from "@/lib/rocket-physics"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Rocket } from "lucide-react"
-import { useState } from "react"
 
 interface RocketDesign {
   name: string
@@ -21,10 +20,10 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "SpaceX",
     yearLaunched: 2010,
     params: {
-      mass: 25000,
-      fuelMass: 385000,
+      mass: 550,
+      fuelMass: 8500,
       thrust: 7607000,
-      burnRate: 135000,
+      burnRate: 2720,
       dragCoefficient: 0.25,
       crossSectionalArea: 12.5,
     },
@@ -35,8 +34,8 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "NASA",
     yearLaunched: 1967,
     params: {
-      mass: 130000,
-      fuelMass: 2970000,
+      mass: 850,
+      fuelMass: 12500,
       thrust: 34500000,
       burnRate: 15000,
       dragCoefficient: 0.28,
@@ -49,8 +48,8 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "NASA",
     yearLaunched: 1981,
     params: {
-      mass: 65000,
-      fuelMass: 730000,
+      mass: 750,
+      fuelMass: 5000,
       thrust: 24944000,
       burnRate: 8183,
       dragCoefficient: 0.32,
@@ -63,10 +62,10 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "Roscosmos",
     yearLaunched: 1966,
     params: {
-      mass: 6900,
-      fuelMass: 303000,
+      mass: 280,
+      fuelMass: 2200,
       thrust: 4020000,
-      burnRate: 67000,
+      burnRate: 1200,
       dragCoefficient: 0.24,
       crossSectionalArea: 10.67,
     },
@@ -77,10 +76,10 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "ESA",
     yearLaunched: 1996,
     params: {
-      mass: 40000,
-      fuelMass: 710000,
+      mass: 550,
+      fuelMass: 6500,
       thrust: 11400000,
-      burnRate: 50000,
+      burnRate: 2800,
       dragCoefficient: 0.26,
       crossSectionalArea: 81.2,
     },
@@ -91,10 +90,10 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "SpaceX",
     yearLaunched: 2023,
     params: {
-      mass: 85000,
-      fuelMass: 5000000,
+      mass: 900,
+      fuelMass: 8500,
       thrust: 32832000,
-      burnRate: 400000,
+      burnRate: 8000,
       dragCoefficient: 0.27,
       crossSectionalArea: 150.0,
     },
@@ -106,8 +105,6 @@ interface RocketGalleryProps {
 }
 
 export function RocketGallery({ onSelectRocket }: RocketGalleryProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
-
   return (
     <Card className="border-border/50 bg-card/20">
       <CardHeader className="pb-2">
@@ -118,45 +115,29 @@ export function RocketGallery({ onSelectRocket }: RocketGalleryProps) {
       </CardHeader>
       <CardContent className="space-y-2">
         {FAMOUS_ROCKETS.map((rocket, idx) => (
-          <div
+          <Button
             key={idx}
-            className={`p-2 rounded border transition-all cursor-pointer ${
-              selectedIndex === idx
-                ? "border-primary bg-primary/10"
-                : "border-border/30 bg-background/30 hover:border-border/50"
-            }`}
-            onClick={() => setSelectedIndex(idx)}
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              onSelectRocket(rocket.params)
+            }}
+            className="w-full h-auto p-2 justify-start hover:bg-primary/10 hover:border-primary"
           >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="text-[10px] font-mono font-bold text-foreground">{rocket.name}</div>
-                <div className="text-[9px] text-muted-foreground">{rocket.description}</div>
-                <div className="text-[8px] text-muted-foreground/50 mt-1">
-                  {rocket.manufacturer} • Launched {rocket.yearLaunched}
-                </div>
-                <div className="grid grid-cols-2 gap-1 mt-2 text-[8px] text-muted-foreground">
-                  <div>Mass: {(rocket.params.mass / 1000).toFixed(1)} t</div>
-                  <div>Fuel: {(rocket.params.fuelMass / 1000).toFixed(1)} t</div>
-                  <div>Thrust: {(rocket.params.thrust / 1000000).toFixed(2)} MN</div>
-                  <div>T/W: {((rocket.params.thrust) / ((rocket.params.mass + rocket.params.fuelMass) * 9.81)).toFixed(2)}</div>
-                </div>
+            <div className="w-full text-left">
+              <div className="text-[10px] font-mono font-bold text-foreground">{rocket.name}</div>
+              <div className="text-[9px] text-muted-foreground">{rocket.description}</div>
+              <div className="text-[8px] text-muted-foreground/50 mt-1">
+                {rocket.manufacturer} • Launched {rocket.yearLaunched}
+              </div>
+              <div className="grid grid-cols-2 gap-1 mt-2 text-[8px] text-muted-foreground">
+                <div>Mass: {(rocket.params.mass / 1000).toFixed(1)} t</div>
+                <div>Fuel: {(rocket.params.fuelMass / 1000).toFixed(1)} t</div>
+                <div>Thrust: {(rocket.params.thrust / 1000000).toFixed(2)} MN</div>
+                <div>T/W: {((rocket.params.thrust) / ((rocket.params.mass + rocket.params.fuelMass) * 9.81)).toFixed(2)}</div>
               </div>
             </div>
-
-            {selectedIndex === idx && (
-              <Button
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onSelectRocket(rocket.params)
-                  setSelectedIndex(null)
-                }}
-                className="w-full h-6 mt-2 text-[9px] font-mono bg-primary/20 hover:bg-primary/30 text-primary"
-              >
-                Load Design
-              </Button>
-            )}
-          </div>
+          </Button>
         ))}
       </CardContent>
     </Card>
