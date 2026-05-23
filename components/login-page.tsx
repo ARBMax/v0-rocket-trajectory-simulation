@@ -21,20 +21,17 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("[v0] Login form submitted")
     setError("")
     setLoading(true)
 
     // Simple validation
     if (!email.trim() || !password.trim()) {
-      console.log("[v0] Empty email or password")
       setError("Please enter both email and password")
       setLoading(false)
       return
     }
 
     if (!emailRegex.test(email)) {
-      console.log("[v0] Invalid email format:", email)
       setError("Please enter a valid email address")
       setLoading(false)
       return
@@ -42,14 +39,11 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
     // Simulate login delay
     setTimeout(() => {
-      console.log("[v0] Validating credentials - email:", email, "password length:", password.length)
-      // For demo purposes, accept any valid email and password >= 3 chars (demo password is 8)
+      // For demo purposes, accept any valid email and password >= 3 chars
       // In production, this would verify against a backend
       if (emailRegex.test(email) && password.length >= 3) {
-        console.log("[v0] Credentials valid, calling onLogin")
         onLogin(email)
       } else {
-        console.log("[v0] Invalid credentials - email valid:", emailRegex.test(email), "password length ok:", password.length >= 3)
         setError("Invalid email format or password too short (min 3 chars)")
       }
       setLoading(false)
@@ -75,7 +69,6 @@ export function LoginPage({ onLogin }: LoginPageProps) {
     }
 
     if (password.length < 3) {
-      console.log("[v0] Password too short:", password.length)
       setError("Password must be at least 3 characters")
       setLoading(false)
       return
@@ -92,10 +85,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       // For demo purposes, accept valid credentials
       // In production, this would create an account in the backend
       if (emailRegex.test(email) && password.length >= 3 && password === confirmPassword) {
-        console.log("[v0] Signup successful, calling onLogin")
         onLogin(email)
       } else {
-        console.log("[v0] Signup failed")
         setError("Failed to create account")
       }
       setLoading(false)

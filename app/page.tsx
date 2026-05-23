@@ -43,11 +43,9 @@ export default function RocketSimulator() {
   }, [])
 
   const handleLogin = (email: string) => {
-    console.log("[v0] Login attempt with email:", email)
     setIsAuthenticated(true)
     setCurrentUser(email)
     localStorage.setItem("rocketSimUser", email)
-    console.log("[v0] Login successful, authenticated:", true)
   }
 
   const handleLogout = () => {
