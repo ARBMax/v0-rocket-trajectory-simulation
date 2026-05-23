@@ -21,10 +21,10 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "SpaceX",
     yearLaunched: 2010,
     params: {
-      rocketMass: 25000,
+      mass: 25000,
       fuelMass: 385000,
-      thrustForce: 7607000,
-      fuelBurnRate: 135000,
+      thrust: 7607000,
+      burnRate: 135000,
       dragCoefficient: 0.25,
       crossSectionalArea: 12.5,
     },
@@ -35,10 +35,10 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "NASA",
     yearLaunched: 1967,
     params: {
-      rocketMass: 130000,
+      mass: 130000,
       fuelMass: 2970000,
-      thrustForce: 34500000,
-      fuelBurnRate: 15000,
+      thrust: 34500000,
+      burnRate: 15000,
       dragCoefficient: 0.28,
       crossSectionalArea: 105.7,
     },
@@ -49,10 +49,10 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "NASA",
     yearLaunched: 1981,
     params: {
-      rocketMass: 65000,
+      mass: 65000,
       fuelMass: 730000,
-      thrustForce: 24944000,
-      fuelBurnRate: 8183,
+      thrust: 24944000,
+      burnRate: 8183,
       dragCoefficient: 0.32,
       crossSectionalArea: 92.1,
     },
@@ -63,10 +63,10 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "Roscosmos",
     yearLaunched: 1966,
     params: {
-      rocketMass: 6900,
+      mass: 6900,
       fuelMass: 303000,
-      thrustForce: 4020000,
-      fuelBurnRate: 67000,
+      thrust: 4020000,
+      burnRate: 67000,
       dragCoefficient: 0.24,
       crossSectionalArea: 10.67,
     },
@@ -77,10 +77,10 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "ESA",
     yearLaunched: 1996,
     params: {
-      rocketMass: 40000,
+      mass: 40000,
       fuelMass: 710000,
-      thrustForce: 11400000,
-      fuelBurnRate: 50000,
+      thrust: 11400000,
+      burnRate: 50000,
       dragCoefficient: 0.26,
       crossSectionalArea: 81.2,
     },
@@ -91,10 +91,10 @@ const FAMOUS_ROCKETS: RocketDesign[] = [
     manufacturer: "SpaceX",
     yearLaunched: 2023,
     params: {
-      rocketMass: 85000,
+      mass: 85000,
       fuelMass: 5000000,
-      thrustForce: 32832000,
-      fuelBurnRate: 400000,
+      thrust: 32832000,
+      burnRate: 400000,
       dragCoefficient: 0.27,
       crossSectionalArea: 150.0,
     },
@@ -135,10 +135,10 @@ export function RocketGallery({ onSelectRocket }: RocketGalleryProps) {
                   {rocket.manufacturer} • Launched {rocket.yearLaunched}
                 </div>
                 <div className="grid grid-cols-2 gap-1 mt-2 text-[8px] text-muted-foreground">
-                  <div>Mass: {(rocket.params.rocketMass / 1000).toFixed(1)} t</div>
+                  <div>Mass: {(rocket.params.mass / 1000).toFixed(1)} t</div>
                   <div>Fuel: {(rocket.params.fuelMass / 1000).toFixed(1)} t</div>
-                  <div>Thrust: {(rocket.params.thrustForce / 1000000).toFixed(2)} MN</div>
-                  <div>T/W: {((rocket.params.thrustForce) / ((rocket.params.rocketMass + rocket.params.fuelMass) * 9.81)).toFixed(2)}</div>
+                  <div>Thrust: {(rocket.params.thrust / 1000000).toFixed(2)} MN</div>
+                  <div>T/W: {((rocket.params.thrust) / ((rocket.params.mass + rocket.params.fuelMass) * 9.81)).toFixed(2)}</div>
                 </div>
               </div>
             </div>
