@@ -90,6 +90,7 @@ export default function RocketSimulator() {
     togglePlayback,
     reset,
     updateParam,
+    updateParams,
     selectPreset,
   } = useRocketSimulation(currentUser || undefined)
 
@@ -239,9 +240,7 @@ export default function RocketSimulator() {
               {/* Rocket Gallery */}
               <RocketGallery
                 onSelectRocket={(galleryParams) => {
-                  Object.entries(galleryParams).forEach(([key, value]) => {
-                    updateParam(key as keyof typeof params, value as number)
-                  })
+                  updateParams(galleryParams)
                 }}
               />
 

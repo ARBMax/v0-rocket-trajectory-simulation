@@ -126,6 +126,18 @@ export function useRocketSimulation(userEmail?: string) {
     [params, saveParamsToStorage]
   )
 
+  // Batch update multiple params at once
+  const updateParams = useCallback(
+    (updates: Partial<RocketParams>) => {
+      const newParams = { ...params, ...updates }
+      setParams(newParams)
+      saveParamsToStorage(newParams)
+      setResult(null)
+      setCurrentIndex(0)
+    },
+    [params, saveParamsToStorage]
+  )
+
   // Select preset
   const selectPreset = useCallback((presetName: string) => {
     setSelectedPreset(presetName)
@@ -158,6 +170,7 @@ export function useRocketSimulation(userEmail?: string) {
     togglePlayback,
     reset,
     updateParam,
+    updateParams,
     selectPreset,
     setCurrentIndex,
   }
