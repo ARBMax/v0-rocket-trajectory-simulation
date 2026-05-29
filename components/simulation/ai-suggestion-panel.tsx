@@ -228,9 +228,17 @@ function SuggestionCard({
     <div 
       className="border border-border/50 rounded overflow-hidden bg-secondary/20 transition-all"
     >
-      <button
+      <div
         onClick={onToggle}
-        className="w-full p-3 flex items-center gap-3 text-left hover:bg-secondary/30 transition-colors"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onToggle()
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        className="w-full p-3 flex items-center gap-3 text-left hover:bg-secondary/30 transition-colors cursor-pointer"
       >
         <div className={`shrink-0 ${categoryColors[suggestion.category]}`}>
           <Icon className="h-4 w-4" />
@@ -251,7 +259,7 @@ function SuggestionCard({
         <ChevronRight 
           className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`} 
         />
-      </button>
+      </div>
       
       {isExpanded && (
         <div className="px-3 pb-3 pt-0 border-t border-border/30">
@@ -259,15 +267,17 @@ function SuggestionCard({
             {suggestion.description}
           </p>
           {suggestion.parameterChanges && onApply && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onApply(suggestion.parameterChanges!)}
-              className="h-6 text-[10px] font-mono bg-primary/10 hover:bg-primary/20 text-primary border-primary/30"
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onApply(suggestion.parameterChanges!)
+              }}
+              className="h-6 text-[10px] font-mono bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded px-2 py-1 flex items-center gap-1.5 transition-colors"
             >
-              <Zap className="mr-1 h-3 w-3" />
+              <Zap className="h-3 w-3" />
               APPLY SUGGESTION
-            </Button>
+            </button>
           )}
         </div>
       )}
