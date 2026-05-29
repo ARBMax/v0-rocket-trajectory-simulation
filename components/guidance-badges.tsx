@@ -8,7 +8,7 @@ interface GuidanceBadgesProps {
 }
 
 export function GuidanceBadges({ params }: GuidanceBadgesProps) {
-  const rocketMass = params.rocketMass
+  const rocketMass = params.mass
   const fuelMass = params.fuelMass
   const thrust = params.thrust
   
