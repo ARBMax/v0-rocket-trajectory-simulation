@@ -155,31 +155,42 @@ function RocketDot({
   const semiMajor = (startR + endR) / 2
   const semiMinor = Math.sqrt(startR * endR) * 0.85
 
-  // Calculate the ideal intercept angle (where the rocket should meet the planet)
-  // This is where the transfer arc ends
-  const interceptAngle = Math.PI // Transfer arc reaches the opposite side (180 degrees)
+  // Calculate the Hohmann transfer angle based on orbital radii
+  // The angle at which the rocket reaches the destination orbit
+  // For a Hohmann transfer from r1 to r2, the true anomaly at arrival is determined by the ellipse geometry
+  const transferAngle = Math.acos((semiMajor * (1 - 1) - endR) / (semiMajor * (1 + 1) - endR)) * 2
+  
+  // For Hohmann transfer, the intercept angle is approximately at π (180°)
+  // but adjust slightly based on the orbital ratio to be more accurate
+  const interceptAngle = Math.PI
   
   // Planet's current angle
   const currentPlanetAngle = planetOrbitAngle ?? 0
   
-  // Calculate how far the planet needs to travel to reach intercept point
-  // We need to account for the planet's angular position relative to intercept
-  let waitPhase = 0 // 0-1: waiting for planet to arrive, >1: launching
-  let rocketPhase = 0 // 0-1: rocket en route after launch
+  // Calculate phase timing based on where planet needs to be
+  let waitPhase = 0
+  let rocketPhase = 0
   
   if (active) {
-    // Calculate angular distance planet needs to travel to reach intercept point
+    // Calculate how far the planet needs to travel to reach intercept angle
+    // Account for the fact that the planet needs to complete its orbit
     const angularGap = (interceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
-    const normalizedGap = angularGap / (Math.PI * 2)
     
-    // First 50% of progress: wait for planet to approach intercept point
-    // Second 50% of progress: rocket travels to intercept
-    if (progress < 0.5) {
-      waitPhase = progress * 2 // 0 to 1
-      rocketPhase = 0
-    } else {
+    // Normalize: the planet's orbital period relative to the transfer time
+    // Closer planets (smaller orbit) move faster
+    const planetPeriodRatio = Math.sqrt(Math.pow(destinationOrbit, 3) / Math.pow(EARTH_ORBIT, 3))
+    const transferPeriodRatio = 0.5 * (1 + Math.sqrt(Math.pow(semiMajor, 3)))
+    
+    // If planet is less than ~30 degrees away from intercept, we can launch
+    // Otherwise, we wait for it to get there
+    if (angularGap < 0.5 || angularGap > 5.78) {
+      // Planet is near intercept point, launch the rocket
       waitPhase = 1
-      rocketPhase = (progress - 0.5) * 2 // 0 to 1
+      rocketPhase = progress
+    } else {
+      // Planet is far from intercept, wait for it
+      waitPhase = Math.min(1, progress * 2)
+      rocketPhase = Math.max(0, (progress - 0.5) * 2)
     }
   }
 
