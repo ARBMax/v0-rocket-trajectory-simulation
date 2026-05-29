@@ -1,31 +1,36 @@
-# v0-rocket-trajectory-simulation
+📌 Overview
+The Rocket Trajectory Simulation System is designed to help users understand rocket motion by simulating trajectories under different conditions such as velocity, angle, thrust, and environmental factors.
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
+It provides a visual and analytical approach to studying projectile motion and basic aerospace principles.
 
-## Built with v0
+✨ Features
+🚀 Real-time trajectory simulation
+📊 Interactive parameter controls (angle, velocity, mass, etc.)
+📈 Graphical visualization of rocket path
+🧮 Physics-based calculations
+🔄 Instant updates when inputs are modified
+🌐 Web-based and easy to access
+🧠 Physics Concepts Used
+Projectile Motion
+Newton’s Laws of Motion
+Gravity and Acceleration
+Air Resistance (optional, if implemented)
+🛠️ Tech Stack
+Frontend: HTML, CSS, JavaScript
+Framework (if used): React / Next.js
+Visualization: Canvas / Chart libraries
+Deployment: Vercel
+⚙️ How It Works
+Input parameters such as:
 
-This repository is linked to a [v0](https://v0.app) project. You can continue developing by visiting the link below -- start new chats to make changes, and v0 will push commits directly to this repo. Every merge to `main` will automatically deploy.
+Initial velocity
+Launch angle
+Mass (if applicable)
+Start the simulation
 
-[Continue working on v0 →](https://v0.app/chat/projects/prj_7lm44gsk4DfSq9fUdT0mMkU8fhlQ)
+The system calculates trajectory using physics formulas
 
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-## Learn More
-
+The path is displayed visually in real-time
 To learn more, take a look at the following resources:
 
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
