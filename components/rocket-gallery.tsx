@@ -113,13 +113,11 @@ export function RocketGallery({ onSelectRocket }: RocketGalleryProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
+        <p className="text-[9px] text-muted-foreground mb-3">Reference designs for inspiration:</p>
         {FAMOUS_ROCKETS.map((rocket, idx) => (
           <div
             key={idx}
-            className="p-2 rounded border border-border/30 bg-background/30 hover:border-border/50 hover:bg-primary/5 transition-all cursor-pointer"
-            onClick={() => {
-              onSelectRocket(rocket.params)
-            }}
+            className="p-2 rounded border border-border/30 bg-background/30 hover:border-border/50 transition-colors"
           >
             <div className="w-full text-left">
               <div className="text-[10px] font-mono font-bold text-foreground">{rocket.name}</div>
