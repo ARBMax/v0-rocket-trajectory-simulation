@@ -118,7 +118,6 @@ export function RocketGallery({ onSelectRocket }: RocketGalleryProps) {
             key={idx}
             className="p-2 rounded border border-border/30 bg-background/30 hover:border-border/50 hover:bg-primary/5 transition-all cursor-pointer"
             onClick={() => {
-              console.log("[v0] Rocket selected:", rocket.name, "params:", rocket.params)
               onSelectRocket(rocket.params)
             }}
           >
