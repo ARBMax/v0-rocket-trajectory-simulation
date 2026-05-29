@@ -155,19 +155,56 @@ function RocketDot({
   const semiMajor = (startR + endR) / 2
   const semiMinor = Math.sqrt(startR * endR) * 0.85
 
-  // Map progress (0..1) to angle on the arc (0..PI)
-  const arcAngle = progress * Math.PI
-  let x = Math.cos(arcAngle) * semiMajor
-  let z = Math.sin(arcAngle) * semiMinor
+  // Calculate the ideal intercept angle (where the rocket should meet the planet)
+  // This is where the transfer arc ends
+  const interceptAngle = Math.PI // Transfer arc reaches the opposite side (180 degrees)
+  
+  // Planet's current angle
+  const currentPlanetAngle = planetOrbitAngle ?? 0
+  
+  // Calculate how far the planet needs to travel to reach intercept point
+  // We need to account for the planet's angular position relative to intercept
+  let waitPhase = 0 // 0-1: waiting for planet to arrive, >1: launching
+  let rocketPhase = 0 // 0-1: rocket en route after launch
+  
+  if (active) {
+    // Calculate angular distance planet needs to travel to reach intercept point
+    const angularGap = (interceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
+    const normalizedGap = angularGap / (Math.PI * 2)
+    
+    // First 50% of progress: wait for planet to approach intercept point
+    // Second 50% of progress: rocket travels to intercept
+    if (progress < 0.5) {
+      waitPhase = progress * 2 // 0 to 1
+      rocketPhase = 0
+    } else {
+      waitPhase = 1
+      rocketPhase = (progress - 0.5) * 2 // 0 to 1
+    }
+  }
 
-  // At the final approach (progress > 0.85), transition to planet's orbital position
-  if (progress > 0.85 && planetOrbitAngle !== undefined) {
-    const approachFactor = (progress - 0.85) / 0.15 // 0 to 1 from 0.85 to 1.0
-    // Interpolate from arc endpoint to planet's actual position
-    const destX = Math.cos(planetOrbitAngle) * destinationOrbit
-    const destZ = Math.sin(planetOrbitAngle) * destinationOrbit
-    x = x + (destX - x) * approachFactor
-    z = z + (destZ - z) * approachFactor
+  // Calculate rocket position
+  let x = 0, z = 0
+  
+  if (rocketPhase > 0) {
+    // Rocket is traveling along the Hohmann transfer arc
+    const arcAngle = rocketPhase * Math.PI
+    x = Math.cos(arcAngle) * semiMajor
+    z = Math.sin(arcAngle) * semiMinor
+
+    // At the final approach, smoothly transition to planet's orbital position
+    if (rocketPhase > 0.85 && planetOrbitAngle !== undefined) {
+      const approachFactor = (rocketPhase - 0.85) / 0.15
+      const destX = Math.cos(planetOrbitAngle) * destinationOrbit
+      const destZ = Math.sin(planetOrbitAngle) * destinationOrbit
+      x = x + (destX - x) * approachFactor
+      z = z + (destZ - z) * approachFactor
+    }
+  } else if (waitPhase > 0) {
+    // Rocket is waiting at Earth orbit
+    // Show a pulsing indicator at the launch point
+    x = EARTH_ORBIT * Math.cos(0)
+    z = EARTH_ORBIT * Math.sin(0)
   }
 
   useFrame(({ clock }) => {
@@ -195,7 +232,7 @@ function RocketDot({
       <Html position={[0, 0.45, 0]} center style={{ pointerEvents: "none" }}>
         <div className="font-mono text-[9px] uppercase tracking-widest text-primary whitespace-nowrap
                         border border-primary/50 bg-background/80 px-1.5 py-0.5 rounded">
-          Rocket — {Math.round(progress * 100)}%
+          {rocketPhase > 0 ? `Rocket — ${Math.round(rocketPhase * 100)}%` : `Waiting for intercept — ${Math.round(progress * 100)}%`}
         </div>
       </Html>
     </group>
