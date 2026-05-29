@@ -240,11 +240,7 @@ export default function RocketSimulator() {
               {/* Rocket Gallery */}
               <RocketGallery
                 onSelectRocket={(galleryParams) => {
-                  console.log("[v0] onSelectRocket called with:", galleryParams)
-                  console.log("[v0] updateParams function exists:", typeof updateParams)
-                  console.log("[v0] Current params before update:", params)
                   updateParams(galleryParams)
-                  console.log("[v0] updateParams called")
                 }}
               />
 

@@ -129,13 +129,15 @@ export function useRocketSimulation(userEmail?: string) {
   // Batch update multiple params at once
   const updateParams = useCallback(
     (updates: Partial<RocketParams>) => {
-      const newParams = { ...params, ...updates }
-      setParams(newParams)
-      saveParamsToStorage(newParams)
+      setParams(prevParams => {
+        const newParams = { ...prevParams, ...updates }
+        saveParamsToStorage(newParams)
+        return newParams
+      })
       setResult(null)
       setCurrentIndex(0)
     },
-    [params, saveParamsToStorage]
+    [saveParamsToStorage]
   )
 
   // Select preset

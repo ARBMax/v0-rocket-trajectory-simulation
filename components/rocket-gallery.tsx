@@ -1,7 +1,6 @@
 'use client'
 
 import { RocketParams } from "@/lib/rocket-physics"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Rocket } from "lucide-react"
 
@@ -115,14 +114,13 @@ export function RocketGallery({ onSelectRocket }: RocketGalleryProps) {
       </CardHeader>
       <CardContent className="space-y-2">
         {FAMOUS_ROCKETS.map((rocket, idx) => (
-          <Button
+          <div
             key={idx}
-            variant="outline"
-            size="sm"
+            className="p-2 rounded border border-border/30 bg-background/30 hover:border-border/50 hover:bg-primary/5 transition-all cursor-pointer"
             onClick={() => {
+              console.log("[v0] Rocket selected:", rocket.name, "params:", rocket.params)
               onSelectRocket(rocket.params)
             }}
-            className="w-full h-auto p-2 justify-start hover:bg-primary/10 hover:border-primary"
           >
             <div className="w-full text-left">
               <div className="text-[10px] font-mono font-bold text-foreground">{rocket.name}</div>
@@ -137,7 +135,7 @@ export function RocketGallery({ onSelectRocket }: RocketGalleryProps) {
                 <div>T/W: {((rocket.params.thrust) / ((rocket.params.mass + rocket.params.fuelMass) * 9.81)).toFixed(2)}</div>
               </div>
             </div>
-          </Button>
+          </div>
         ))}
       </CardContent>
     </Card>
