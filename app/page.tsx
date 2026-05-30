@@ -88,6 +88,7 @@ export default function RocketSimulator() {
     playbackSpeed,
     selectedPreset,
     theoretical,
+    rocketPhase,
     setPlaybackSpeed,
     togglePlayback,
     reset,
@@ -316,6 +317,7 @@ export default function RocketSimulator() {
                 currentState={currentState}
                 result={result}
                 theoretical={theoretical}
+                rocketPhase={rocketPhase}
               />
 
               {/* Section Label */}

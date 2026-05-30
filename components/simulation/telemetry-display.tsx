@@ -21,13 +21,18 @@ interface TelemetryDisplayProps {
     idealBurnoutVelocity: number
     burnTime: number
   }
+  rocketPhase?: number
 }
 
 export function TelemetryDisplay({
   currentState,
   result,
   theoretical,
+  rocketPhase = 1,
 }: TelemetryDisplayProps) {
+  // If rocket phase is 0, we're in wait/standby mode - show zero values
+  const isWaiting = rocketPhase === 0
+  const displayState = isWaiting ? null : currentState
   const formatValue = (value: number, decimals: number = 2) => {
     if (Math.abs(value) >= 1000000) {
       return `${(value / 1000000).toFixed(decimals)}M`
@@ -72,59 +77,59 @@ export function TelemetryDisplay({
     {
       icon: ArrowUp,
       label: "ALT",
-      value: currentState ? formatValue(currentState.height, 1) : "0.0",
+      value: displayState ? formatValue(displayState.height, 1) : "0.0",
       unit: "m",
-      sub: result ? `MAX ${formatValue(result.maxHeight, 0)}m` : null,
+      sub: result && !isWaiting ? `MAX ${formatValue(result.maxHeight, 0)}m` : null,
     },
     {
       icon: Gauge,
       label: "VEL",
-      value: currentState ? formatValue(currentState.velocity, 1) : "0.0",
+      value: displayState ? formatValue(displayState.velocity, 1) : "0.0",
       unit: "m/s",
-      sub: result ? `MAX ${formatValue(result.maxVelocity, 0)} m/s` : null,
+      sub: result && !isWaiting ? `MAX ${formatValue(result.maxVelocity, 0)} m/s` : null,
     },
     {
       icon: TrendingUp,
       label: "ACC",
-      value: currentState ? formatValue(currentState.acceleration, 1) : "0.0",
+      value: displayState ? formatValue(displayState.acceleration, 1) : "0.0",
       unit: "m/s²",
-      sub: `G-FORCE ${currentState ? (currentState.acceleration / 9.81).toFixed(2) : "0.00"}`,
+      sub: `G-FORCE ${displayState ? (displayState.acceleration / 9.81).toFixed(2) : "0.00"}`,
     },
     {
       icon: Flame,
       label: "THR",
-      value: currentState ? formatValue(currentState.thrust, 0) : "0",
+      value: displayState ? formatValue(displayState.thrust, 0) : "0",
       unit: "N",
-      sub: currentState?.phase === "powered" ? "FIRING" : "OFFLINE",
-      subColor: currentState?.phase === "powered" ? "text-primary" : "text-muted-foreground",
+      sub: displayState?.phase === "powered" && !isWaiting ? "FIRING" : "OFFLINE",
+      subColor: displayState?.phase === "powered" && !isWaiting ? "text-primary" : "text-muted-foreground",
     },
     {
       icon: Fuel,
       label: "FUEL",
-      value: currentState ? formatValue(currentState.fuelRemaining, 2) : "0.00",
+      value: displayState ? formatValue(displayState.fuelRemaining, 2) : "0.00",
       unit: "kg",
-      progress: currentState
-        ? (currentState.fuelRemaining / (result?.states[0]?.fuelRemaining ?? 1)) * 100
+      progress: displayState
+        ? (displayState.fuelRemaining / (result?.states[0]?.fuelRemaining ?? 1)) * 100
         : 100,
     },
     {
       icon: Target,
       label: "MASS",
-      value: currentState ? formatValue(currentState.mass, 2) : "0.00",
+      value: displayState ? formatValue(displayState.mass, 2) : "0.00",
       unit: "kg",
-      sub: `NET ${currentState ? formatValue(currentState.netForce, 0) : "0"}N`,
+      sub: `NET ${displayState ? formatValue(displayState.netForce, 0) : "0"}N`,
     },
     {
       icon: Timer,
       label: "T+",
-      value: currentState?.time.toFixed(2) ?? "0.00",
+      value: displayState?.time.toFixed(2) ?? "0.00",
       unit: "s",
-      sub: `BURN ${theoretical.burnTime.toFixed(1)}s`,
+      sub: !isWaiting ? `BURN ${theoretical.burnTime.toFixed(1)}s` : "STANDBY",
     },
     {
       icon: Activity,
       label: "PHASE",
-      value: currentState?.phase?.toUpperCase() ?? "READY",
+      value: isWaiting ? "READY" : displayState?.phase?.toUpperCase() ?? "READY",
       unit: "",
       isPhase: true,
     },

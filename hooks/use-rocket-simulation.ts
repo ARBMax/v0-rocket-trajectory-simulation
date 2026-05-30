@@ -158,6 +158,10 @@ export function useRocketSimulation(userEmail?: string) {
   // Get current state
   const currentState = result?.states[currentIndex] ?? null
 
+  // Calculate rocket phase for orbital mechanics visualization
+  // When result is null or simulation hasn't started, rocket phase is 0 (waiting)
+  const rocketPhase = result ? (currentIndex / result.states.length) : 0
+
   return {
     params,
     result,
@@ -167,6 +171,7 @@ export function useRocketSimulation(userEmail?: string) {
     playbackSpeed,
     selectedPreset,
     theoretical,
+    rocketPhase,
     setPlaybackSpeed,
     runSimulation,
     togglePlayback,
