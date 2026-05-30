@@ -30,9 +30,10 @@ export function TelemetryDisplay({
   theoretical,
   rocketPhase = 0,
 }: TelemetryDisplayProps) {
-  // If rocket phase is 0, we're in wait/standby mode - suppress telemetry display
-  // If rocket phase > 0, we're in flight - show telemetry data with updates
-  const isMoving = rocketPhase > 0
+  // Determine if we're moving based on currentState
+  // If currentState is null, the rocket is waiting (pre-launch)
+  // If currentState exists, the rocket is flying (post-launch) 
+  const isMoving = currentState !== null
   const displayState = isMoving ? currentState : null
   const formatValue = (value: number, decimals: number = 2) => {
     if (Math.abs(value) >= 1000000) {
