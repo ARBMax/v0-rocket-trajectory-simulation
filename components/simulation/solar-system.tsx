@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useMemo } from "react"
+import { useRef, useState, useMemo, useEffect } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls, Stars, Text, Html } from "@react-three/drei"
 import * as THREE from "three"
@@ -151,55 +151,54 @@ function RocketDot({
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const glowRef = useRef<THREE.Mesh>(null)
+  const prevPhaseRef = useRef<number>(0)
 
   const startR   = EARTH_ORBIT
   const endR     = destinationOrbit
   const semiMajor = (startR + endR) / 2
   const semiMinor = Math.sqrt(startR * endR) * 0.85
 
-  // Calculate the Hohmann transfer angle based on orbital radii
-  // The angle at which the rocket reaches the destination orbit
-  // For a Hohmann transfer from r1 to r2, the true anomaly at arrival is determined by the ellipse geometry
-  const transferAngle = Math.acos((semiMajor * (1 - 1) - endR) / (semiMajor * (1 + 1) - endR)) * 2
-  
-  // For Hohmann transfer, the intercept angle is approximately at π (180°)
-  // but adjust slightly based on the orbital ratio to be more accurate
+  // For Hohmann transfer, the intercept angle is at π (180°)
   const interceptAngle = Math.PI
   
   // Planet's current angle
   const currentPlanetAngle = planetOrbitAngle ?? 0
   
   // Calculate phase timing based on where planet needs to be
-  let waitPhase = 0
   let rocketPhase = 0
   
-  if (active) {
+  if (active && progress > 0) {
     // Calculate how far the planet needs to travel to reach intercept angle
-    // Account for the fact that the planet needs to complete its orbit
     const angularGap = (interceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
     
     // Launch window is when planet is within ~30 degrees of intercept angle
-    // This includes both approaching from behind and having just passed
     const launchWindowSize = 0.52 // ~30 degrees in radians
     const canLaunch = angularGap < launchWindowSize || angularGap > (Math.PI * 2 - launchWindowSize)
     
-    if (canLaunch && progress > 0) {
-      // Planet is near intercept point and simulation has started - launch the rocket
-      waitPhase = 0
+    if (canLaunch) {
+      // Planet is near intercept point - launch the rocket
       rocketPhase = progress
-    } else {
-      // Planet is not at intercept yet - wait for it to get there
-      waitPhase = Math.min(1, progress)
-      rocketPhase = 0
     }
-    
-    // Notify parent of actual rocket phase (with waiting logic applied)
-    onActualPhaseChange?.(rocketPhase)
+    // else rocketPhase stays 0 (waiting)
   }
 
-  // Calculate rocket position - default to Earth's orbit position
-  let x = EARTH_ORBIT * Math.cos(0)
-  let z = EARTH_ORBIT * Math.sin(0)
+  // Notify parent of actual rocket phase via useEffect (not during render)
+  useEffect(() => {
+    if (prevPhaseRef.current !== rocketPhase) {
+      prevPhaseRef.current = rocketPhase
+      onActualPhaseChange?.(rocketPhase)
+    }
+  }, [rocketPhase, onActualPhaseChange])
+
+  // Also notify when component mounts or active changes to ensure initial state sync
+  useEffect(() => {
+    onActualPhaseChange?.(rocketPhase)
+  }, [active])
+
+  // Calculate rocket position - ALWAYS default to Earth's orbit position
+  // Only move along transfer arc when rocketPhase > 0
+  let x = EARTH_ORBIT  // Earth is at angle 0, so cos(0) = 1, sin(0) = 0
+  let z = 0
   
   if (rocketPhase > 0) {
     // Rocket is traveling along the Hohmann transfer arc
@@ -216,7 +215,6 @@ function RocketDot({
       z = z + (destZ - z) * approachFactor
     }
   }
-  // When rocketPhase === 0, x and z remain at Earth's orbit (the default)
 
   useFrame(({ clock }) => {
     if (glowRef.current) {
