@@ -30,10 +30,10 @@ export function TelemetryDisplay({
   theoretical,
   rocketPhase = 1,
 }: TelemetryDisplayProps) {
-  // If rocket phase is 0, we're in wait/standby mode - show telemetry data
-  // If rocket phase > 0, we're in flight - hide telemetry data (suppress updates)
-  const isWaiting = rocketPhase === 0
-  const displayState = isWaiting ? currentState : null
+  // If rocket phase is 0, we're in wait/standby mode - suppress telemetry display
+  // If rocket phase > 0, we're in flight - show telemetry data with updates
+  const isMoving = rocketPhase > 0
+  const displayState = isMoving ? currentState : null
   const formatValue = (value: number, decimals: number = 2) => {
     if (Math.abs(value) >= 1000000) {
       return `${(value / 1000000).toFixed(decimals)}M`
@@ -80,14 +80,14 @@ export function TelemetryDisplay({
       label: "ALT",
       value: displayState ? formatValue(displayState.height, 1) : "0.0",
       unit: "m",
-      sub: result && !isWaiting ? `MAX ${formatValue(result.maxHeight, 0)}m` : null,
+      sub: result && isMoving ? `MAX ${formatValue(result.maxHeight, 0)}m` : null,
     },
     {
       icon: Gauge,
       label: "VEL",
       value: displayState ? formatValue(displayState.velocity, 1) : "0.0",
       unit: "m/s",
-      sub: result && !isWaiting ? `MAX ${formatValue(result.maxVelocity, 0)} m/s` : null,
+      sub: result && isMoving ? `MAX ${formatValue(result.maxVelocity, 0)} m/s` : null,
     },
     {
       icon: TrendingUp,
@@ -101,8 +101,8 @@ export function TelemetryDisplay({
       label: "THR",
       value: displayState ? formatValue(displayState.thrust, 0) : "0",
       unit: "N",
-      sub: displayState?.phase === "powered" && !isWaiting ? "FIRING" : "OFFLINE",
-      subColor: displayState?.phase === "powered" && !isWaiting ? "text-primary" : "text-muted-foreground",
+      sub: displayState?.phase === "powered" && isMoving ? "FIRING" : "OFFLINE",
+      subColor: displayState?.phase === "powered" && isMoving ? "text-primary" : "text-muted-foreground",
     },
     {
       icon: Fuel,
@@ -125,12 +125,12 @@ export function TelemetryDisplay({
       label: "T+",
       value: displayState?.time.toFixed(2) ?? "0.00",
       unit: "s",
-      sub: !isWaiting ? `BURN ${theoretical.burnTime.toFixed(1)}s` : "STANDBY",
+      sub: isMoving ? `BURN ${theoretical.burnTime.toFixed(1)}s` : "STANDBY",
     },
     {
       icon: Activity,
       label: "PHASE",
-      value: isWaiting ? "READY" : displayState?.phase?.toUpperCase() ?? "READY",
+      value: !isMoving ? "READY" : displayState?.phase?.toUpperCase() ?? "READY",
       unit: "",
       isPhase: true,
     },
