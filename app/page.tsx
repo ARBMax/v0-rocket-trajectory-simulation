@@ -268,7 +268,7 @@ export default function RocketSimulator() {
               <CustomObjectives result={result} />
 
               {/* Physics Equations Display */}
-              <PhysicsEquationsPanel currentState={currentState} params={params} />
+              <PhysicsEquationsPanel currentState={rocketPhase === 0 ? null : currentState} params={params} />
 
               {/* Export Mission */}
               <ExportMission result={result} params={params} destinationPlanet={destinationPlanet} />
@@ -358,7 +358,7 @@ export default function RocketSimulator() {
 
                 <TabsContent value="visual" className="mt-4 space-y-4">
                   <div className="h-[400px] rounded border border-border/50 overflow-hidden bg-card/30">
-                    <RocketVisual currentState={currentState} result={result} />
+                    <RocketVisual currentState={rocketPhase === 0 ? null : currentState} result={result} />
                   </div>
                   
                   <div>
@@ -373,7 +373,7 @@ export default function RocketSimulator() {
                         destinationPlanet={destinationPlanet}
                         onSelectPlanet={setDestinationPlanet}
                         result={result}
-                        currentState={currentState}
+                        currentState={rocketPhase === 0 ? null : currentState}
                         playbackSpeed={playbackSpeed}
                       />
                     </div>
