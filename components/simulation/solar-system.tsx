@@ -352,14 +352,17 @@ function Scene({
   onSelectPlanet,
   rocketProgress,
   playbackSpeed = 1,
+  hasResult = false,
 }: {
   destinationPlanet: string
   onSelectPlanet: (name: string) => void
   rocketProgress: number
   playbackSpeed: number
+  hasResult?: boolean
 }) {
   const destData = PLANETS.find(p => p.name === destinationPlanet) ?? PLANETS[3]
-  const hasJourney = rocketProgress > 0
+  // Show rocket if it's in flight (progress > 0) OR if a simulation is loaded but waiting (hasResult && progress === 0)
+  const hasJourney = rocketProgress > 0 || hasResult
   const planetAngleRef = useRef(0)
 
   return (
@@ -422,7 +425,8 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
   // Map simulation progress to journey fraction (0→1)
   // The rocket should travel the full arc to destination based on the flight phases
   const rocketProgress = useMemo(() => {
-    if (!result || !currentState) return 0
+    if (!result) return 0
+    if (!currentState) return 0 // In waiting state - still show rocket at position 0
     if (result.states.length < 2) return 0
     
     // Find current index in simulation states
@@ -439,6 +443,9 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
     // The journey completes when normalizedProgress reaches 1.0
     return Math.min(1, normalizedProgress)
   }, [result, currentState])
+
+  // hasResult indicates if there's a simulation loaded (for display purposes)
+  const hasResult = !!result
 
   return (
     <div className="w-full h-full relative">
@@ -472,6 +479,7 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
           onSelectPlanet={onSelectPlanet}
           rocketProgress={rocketProgress}
           playbackSpeed={playbackSpeed}
+          hasResult={hasResult}
         />
       </Canvas>
     </div>
