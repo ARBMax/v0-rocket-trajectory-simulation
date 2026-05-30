@@ -153,19 +153,11 @@ function RocketDot({
   const glowRef = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
   const rocketPhaseRef = useRef<number>(0)
-  const hasLaunchedRef = useRef<boolean>(false)
 
   const startR   = EARTH_ORBIT
   const endR     = destinationOrbit
   const semiMajor = (startR + endR) / 2
   const semiMinor = Math.sqrt(startR * endR) * 0.85
-
-  // For Hohmann transfer, the intercept angle is at π (180°)
-  const interceptAngle = Math.PI
-  
-  // Launch window size - wide enough to trigger reasonably quickly
-  // π/2 = 90 degrees on each side of intercept = 180 degree total window
-  const launchWindowSize = Math.PI / 2
 
   // useFrame runs every frame - check planet angle and update rocket position here
   useFrame(({ clock }) => {
@@ -177,25 +169,17 @@ function RocketDot({
       glowRef.current.scale.setScalar(s)
     }
 
-    // Get current planet angle (updated by Planet component's useFrame)
-    const currentPlanetAngle = planetAngleRef.current
-
-    // SINGLE SOURCE OF TRUTH: Calculate rocketPhase based on planet position
+    // SINGLE SOURCE OF TRUTH: Calculate rocketPhase based on simulation progress
+    // The rocket waits at Earth until launched, then follows the transfer arc
     let newRocketPhase = 0
     
     if (active && progress > 0) {
-      // Check if planet has reached the launch window
-      const angularGap = (interceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
-      const canLaunch = angularGap < launchWindowSize || angularGap > (Math.PI * 2 - launchWindowSize)
-      
-      // Once launched, stay launched (don't go back to waiting)
-      if (canLaunch || hasLaunchedRef.current) {
-        hasLaunchedRef.current = true
-        newRocketPhase = progress
-      }
+      // Launch immediately when simulation starts (progress > 0)
+      // In the future, this could check planet angle: canLaunch
+      newRocketPhase = progress
     } else {
-      // Reset launch state when not active
-      hasLaunchedRef.current = false
+      // No simulation running - rocket waits at Earth
+      newRocketPhase = 0
     }
 
     // Notify parent if phase changed
@@ -217,14 +201,14 @@ function RocketDot({
       // At the final approach, smoothly transition to planet's orbital position
       if (newRocketPhase > 0.85) {
         const approachFactor = (newRocketPhase - 0.85) / 0.15
-        const destX = Math.cos(currentPlanetAngle) * destinationOrbit
-        const destZ = Math.sin(currentPlanetAngle) * destinationOrbit
+        const destX = Math.cos(planetAngleRef.current) * destinationOrbit
+        const destZ = Math.sin(planetAngleRef.current) * destinationOrbit
         x = x + (destX - x) * approachFactor
         z = z + (destZ - z) * approachFactor
       }
     }
 
-    // Update position
+    // Update position - this happens every frame, ensuring smooth continuous motion
     groupRef.current.position.set(x, 0.08, z)
   })
 
