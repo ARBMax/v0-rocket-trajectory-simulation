@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRocketSimulation } from "@/hooks/use-rocket-simulation"
+import { useMobileView } from "@/lib/mobile-context"
 import { ControlPanel } from "@/components/simulation/control-panel"
 import { TrajectoryChart, VelocityChart, ForcesChart } from "@/components/simulation/trajectory-chart"
 import { TelemetryDisplay } from "@/components/simulation/telemetry-display"
@@ -18,7 +19,7 @@ import { KeyboardHints } from "@/components/keyboard-hints"
 import { CustomObjectives } from "@/components/custom-objectives"
 import { RocketGallery } from "@/components/rocket-gallery"
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
-import { Rocket, Radio, Clock, Shield } from "lucide-react"
+import { Rocket, Radio, Clock, Shield, Smartphone, Monitor } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FunFactsBanner } from "@/components/fun-facts-banner"
 import { LoginPage } from "@/components/login-page"
@@ -32,6 +33,7 @@ export default function RocketSimulator() {
   const [currentTime, setCurrentTime] = useState("--:--:--")
   const [currentDate, setCurrentDate] = useState("--- -- ----")
   const [timezone, setTimezone] = useState("UTC")
+  const { isMobileFormat, toggleMobileFormat } = useMobileView()
 
   // Check if user is already logged in (from localStorage)
   useEffect(() => {
@@ -162,6 +164,23 @@ export default function RocketSimulator() {
                     Telemetry Active
                   </span>
                 </div>
+                <button
+                  onClick={toggleMobileFormat}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors border-l border-border/50 pl-4"
+                  title={isMobileFormat ? "Switch to Desktop" : "Switch to Mobile"}
+                >
+                  {isMobileFormat ? (
+                    <>
+                      <Monitor className="h-3.5 w-3.5" />
+                      <span className="text-xs font-mono uppercase tracking-wider">Desktop</span>
+                    </>
+                  ) : (
+                    <>
+                      <Smartphone className="h-3.5 w-3.5" />
+                      <span className="text-xs font-mono uppercase tracking-wider">Mobile</span>
+                    </>
+                  )}
+                </button>
                 <div className="flex items-center gap-2 text-muted-foreground font-mono text-xs border-l border-border/50 pl-4">
                   <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
                   <div className="flex flex-col items-end">
@@ -209,10 +228,10 @@ export default function RocketSimulator() {
             <FunFactsBanner />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[340px,1fr] h-full">
+          <div className={isMobileFormat ? "flex flex-col gap-4" : "grid gap-4 lg:grid-cols-[340px,1fr]"} style={{ height: isMobileFormat ? 'auto' : '100%' }}>
             {/* Left Sidebar - Controls */}
             <aside
-              className={`space-y-4 transition-all duration-500 delay-100 ${
+              className={`${isMobileFormat ? "order-2" : ""} space-y-4 transition-all duration-500 delay-100 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
               }`}
             >
@@ -281,7 +300,7 @@ export default function RocketSimulator() {
 
             {/* Main Content Area */}
             <div
-              className={`space-y-4 transition-all duration-500 delay-200 ${
+              className={`${isMobileFormat ? "order-1" : ""} space-y-4 transition-all duration-500 delay-200 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
               }`}
             >
