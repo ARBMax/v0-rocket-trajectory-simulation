@@ -28,7 +28,7 @@ export function TelemetryDisplay({
   currentState,
   result,
   theoretical,
-  rocketPhase = 1,
+  rocketPhase = 0,
 }: TelemetryDisplayProps) {
   // If rocket phase is 0, we're in wait/standby mode - suppress telemetry display
   // If rocket phase > 0, we're in flight - show telemetry data with updates
