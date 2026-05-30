@@ -30,9 +30,10 @@ export function TelemetryDisplay({
   theoretical,
   rocketPhase = 1,
 }: TelemetryDisplayProps) {
-  // If rocket phase is 0, we're in wait/standby mode - show zero values
+  // If rocket phase is 0, we're in wait/standby mode - show telemetry data
+  // If rocket phase > 0, we're in flight - hide telemetry data (suppress updates)
   const isWaiting = rocketPhase === 0
-  const displayState = isWaiting ? null : currentState
+  const displayState = isWaiting ? currentState : null
   const formatValue = (value: number, decimals: number = 2) => {
     if (Math.abs(value) >= 1000000) {
       return `${(value / 1000000).toFixed(decimals)}M`

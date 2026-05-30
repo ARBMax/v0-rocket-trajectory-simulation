@@ -314,7 +314,7 @@ export default function RocketSimulator() {
 
               {/* Telemetry Display */}
               <TelemetryDisplay
-                currentState={rocketPhase === 0 ? null : currentState}
+                currentState={currentState}
                 result={result}
                 theoretical={theoretical}
                 rocketPhase={rocketPhase}
