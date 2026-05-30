@@ -374,7 +374,7 @@ export default function RocketSimulator() {
                         destinationPlanet={destinationPlanet}
                         onSelectPlanet={setDestinationPlanet}
                         result={result}
-                        currentState={actualRocketPhase === 0 ? null : currentState}
+                        currentState={currentState}
                         playbackSpeed={playbackSpeed}
                         onActualPhaseChange={setActualRocketPhase}
                       />

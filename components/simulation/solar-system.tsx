@@ -164,22 +164,13 @@ function RocketDot({
   // Planet's current angle
   const currentPlanetAngle = planetOrbitAngle ?? 0
   
-  // Calculate phase timing based on where planet needs to be
+  // Calculate phase timing - rocket moves when simulation progress > 0 and active
+  // The rocket phase directly follows the simulation progress
   let rocketPhase = 0
   
   if (active && progress > 0) {
-    // Calculate how far the planet needs to travel to reach intercept angle
-    const angularGap = (interceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
-    
-    // Launch window is when planet is within ~30 degrees of intercept angle
-    const launchWindowSize = 0.52 // ~30 degrees in radians
-    const canLaunch = angularGap < launchWindowSize || angularGap > (Math.PI * 2 - launchWindowSize)
-    
-    if (canLaunch) {
-      // Planet is near intercept point - launch the rocket
-      rocketPhase = progress
-    }
-    // else rocketPhase stays 0 (waiting)
+    // Rocket follows simulation progress directly
+    rocketPhase = progress
   }
 
   // Notify parent of actual rocket phase via useEffect (not during render)
