@@ -197,8 +197,9 @@ function RocketDot({
     onActualPhaseChange?.(rocketPhase)
   }
 
-  // Calculate rocket position
-  let x = 0, z = 0
+  // Calculate rocket position - default to Earth's orbit position
+  let x = EARTH_ORBIT * Math.cos(0)
+  let z = EARTH_ORBIT * Math.sin(0)
   
   if (rocketPhase > 0) {
     // Rocket is traveling along the Hohmann transfer arc
@@ -214,12 +215,8 @@ function RocketDot({
       x = x + (destX - x) * approachFactor
       z = z + (destZ - z) * approachFactor
     }
-  } else if (waitPhase > 0) {
-    // Rocket is waiting at Earth orbit
-    // Show a pulsing indicator at the launch point
-    x = EARTH_ORBIT * Math.cos(0)
-    z = EARTH_ORBIT * Math.sin(0)
   }
+  // When rocketPhase === 0, x and z remain at Earth's orbit (the default)
 
   useFrame(({ clock }) => {
     if (glowRef.current) {
