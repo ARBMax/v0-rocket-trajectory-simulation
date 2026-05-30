@@ -140,18 +140,20 @@ function RocketDot({
   destinationOrbit,
   progress,
   active,
-  planetOrbitAngle,
+  planetAngleRef,
   onActualPhaseChange,
 }: {
   destinationOrbit: number
   progress: number
   active: boolean
-  planetOrbitAngle?: number
+  planetAngleRef: React.MutableRefObject<number>
   onActualPhaseChange?: (phase: number) => void
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const glowRef = useRef<THREE.Mesh>(null)
-  const prevPhaseRef = useRef<number>(0)
+  const groupRef = useRef<THREE.Group>(null)
+  const rocketPhaseRef = useRef<number>(0)
+  const hasLaunchedRef = useRef<boolean>(false)
 
   const startR   = EARTH_ORBIT
   const endR     = destinationOrbit
@@ -161,63 +163,81 @@ function RocketDot({
   // For Hohmann transfer, the intercept angle is at π (180°)
   const interceptAngle = Math.PI
   
-  // Planet's current angle
-  const currentPlanetAngle = planetOrbitAngle ?? 0
-  
-  // Calculate phase timing - rocket moves when simulation progress > 0 and active
-  // The rocket phase directly follows the simulation progress
-  let rocketPhase = 0
-  
-  if (active && progress > 0) {
-    // Rocket follows simulation progress directly
-    rocketPhase = progress
-  }
+  // Launch window size - wide enough to trigger reasonably quickly
+  // π/2 = 90 degrees on each side of intercept = 180 degree total window
+  const launchWindowSize = Math.PI / 2
 
-  // Notify parent of actual rocket phase via useEffect (not during render)
-  useEffect(() => {
-    if (prevPhaseRef.current !== rocketPhase) {
-      prevPhaseRef.current = rocketPhase
-      onActualPhaseChange?.(rocketPhase)
-    }
-  }, [rocketPhase, onActualPhaseChange])
-
-  // Also notify when component mounts or active changes to ensure initial state sync
-  useEffect(() => {
-    onActualPhaseChange?.(rocketPhase)
-  }, [active])
-
-  // Calculate rocket position - ALWAYS default to Earth's orbit position
-  // Only move along transfer arc when rocketPhase > 0
-  let x = EARTH_ORBIT  // Earth is at angle 0, so cos(0) = 1, sin(0) = 0
-  let z = 0
-  
-  if (rocketPhase > 0) {
-    // Rocket is traveling along the Hohmann transfer arc
-    const arcAngle = rocketPhase * Math.PI
-    x = Math.cos(arcAngle) * semiMajor
-    z = Math.sin(arcAngle) * semiMinor
-
-    // At the final approach, smoothly transition to planet's orbital position
-    if (rocketPhase > 0.85 && planetOrbitAngle !== undefined) {
-      const approachFactor = (rocketPhase - 0.85) / 0.15
-      const destX = Math.cos(planetOrbitAngle) * destinationOrbit
-      const destZ = Math.sin(planetOrbitAngle) * destinationOrbit
-      x = x + (destX - x) * approachFactor
-      z = z + (destZ - z) * approachFactor
-    }
-  }
-
+  // useFrame runs every frame - check planet angle and update rocket position here
   useFrame(({ clock }) => {
+    if (!groupRef.current) return
+    
+    // Glow pulsing animation
     if (glowRef.current) {
       const s = 1 + 0.3 * Math.sin(clock.getElapsedTime() * 4)
       glowRef.current.scale.setScalar(s)
     }
+
+    // Get current planet angle (updated by Planet component's useFrame)
+    const currentPlanetAngle = planetAngleRef.current
+
+    // SINGLE SOURCE OF TRUTH: Calculate rocketPhase based on planet position
+    let newRocketPhase = 0
+    
+    if (active && progress > 0) {
+      // Check if planet has reached the launch window
+      const angularGap = (interceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
+      const canLaunch = angularGap < launchWindowSize || angularGap > (Math.PI * 2 - launchWindowSize)
+      
+      // Once launched, stay launched (don't go back to waiting)
+      if (canLaunch || hasLaunchedRef.current) {
+        hasLaunchedRef.current = true
+        newRocketPhase = progress
+      }
+    } else {
+      // Reset launch state when not active
+      hasLaunchedRef.current = false
+    }
+
+    // Notify parent if phase changed
+    if (rocketPhaseRef.current !== newRocketPhase) {
+      rocketPhaseRef.current = newRocketPhase
+      onActualPhaseChange?.(newRocketPhase)
+    }
+
+    // Calculate rocket position based on phase
+    let x = EARTH_ORBIT  // Default: Earth's orbit (angle 0)
+    let z = 0
+    
+    if (newRocketPhase > 0) {
+      // Rocket is traveling along the Hohmann transfer arc
+      const arcAngle = newRocketPhase * Math.PI
+      x = Math.cos(arcAngle) * semiMajor
+      z = Math.sin(arcAngle) * semiMinor
+
+      // At the final approach, smoothly transition to planet's orbital position
+      if (newRocketPhase > 0.85) {
+        const approachFactor = (newRocketPhase - 0.85) / 0.15
+        const destX = Math.cos(currentPlanetAngle) * destinationOrbit
+        const destZ = Math.sin(currentPlanetAngle) * destinationOrbit
+        x = x + (destX - x) * approachFactor
+        z = z + (destZ - z) * approachFactor
+      }
+    }
+
+    // Update position
+    groupRef.current.position.set(x, 0.08, z)
   })
+
+  // Notify parent on mount with initial state (waiting)
+  useEffect(() => {
+    onActualPhaseChange?.(0)
+  }, [])
 
   if (!active) return null
 
+  // Initial position at Earth (will be updated by useFrame)
   return (
-    <group position={[x, 0.08, z]}>
+    <group ref={groupRef} position={[EARTH_ORBIT, 0.08, 0]}>
       {/* Outer glow */}
       <mesh ref={glowRef}>
         <sphereGeometry args={[0.22, 16, 16]} />
@@ -232,7 +252,7 @@ function RocketDot({
       <Html position={[0, 0.45, 0]} center style={{ pointerEvents: "none" }}>
         <div className="font-mono text-[9px] uppercase tracking-widest text-primary whitespace-nowrap
                         border border-primary/50 bg-background/80 px-1.5 py-0.5 rounded">
-          {rocketPhase > 0 ? `Rocket — ${Math.round(rocketPhase * 100)}%` : `Waiting for intercept — ${Math.round(progress * 100)}%`}
+          {rocketPhaseRef.current > 0 ? `Rocket — ${Math.round(rocketPhaseRef.current * 100)}%` : `Waiting for intercept`}
         </div>
       </Html>
     </group>
@@ -384,7 +404,7 @@ function Scene({
         destinationOrbit={destData.orbitRadius}
         progress={rocketProgress}
         active={hasJourney}
-        planetOrbitAngle={planetAngleRef.current}
+        planetAngleRef={planetAngleRef}
         onActualPhaseChange={onActualPhaseChange}
       />
 
