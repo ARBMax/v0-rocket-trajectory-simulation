@@ -176,21 +176,19 @@ function RocketDot({
     // Account for the fact that the planet needs to complete its orbit
     const angularGap = (interceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
     
-    // Normalize: the planet's orbital period relative to the transfer time
-    // Closer planets (smaller orbit) move faster
-    const planetPeriodRatio = Math.sqrt(Math.pow(destinationOrbit, 3) / Math.pow(EARTH_ORBIT, 3))
-    const transferPeriodRatio = 0.5 * (1 + Math.sqrt(Math.pow(semiMajor, 3)))
+    // Launch window is when planet is within ~30 degrees of intercept angle
+    // This includes both approaching from behind and having just passed
+    const launchWindowSize = 0.52 // ~30 degrees in radians
+    const canLaunch = angularGap < launchWindowSize || angularGap > (Math.PI * 2 - launchWindowSize)
     
-    // If planet is less than ~30 degrees away from intercept, we can launch
-    // Otherwise, we wait for it to get there
-    if (angularGap < 0.5 || angularGap > 5.78) {
-      // Planet is near intercept point, launch the rocket
-      waitPhase = 1
+    if (canLaunch && progress > 0) {
+      // Planet is near intercept point and simulation has started - launch the rocket
+      waitPhase = 0
       rocketPhase = progress
     } else {
-      // Planet is far from intercept, wait for it
-      waitPhase = Math.min(1, progress * 2)
-      rocketPhase = Math.max(0, (progress - 0.5) * 2)
+      // Planet is not at intercept yet - wait for it to get there
+      waitPhase = Math.min(1, progress)
+      rocketPhase = 0
     }
   }
 
