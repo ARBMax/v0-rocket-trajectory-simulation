@@ -141,11 +141,13 @@ function RocketDot({
   progress,
   active,
   planetOrbitAngle,
+  onActualPhaseChange,
 }: {
   destinationOrbit: number
   progress: number
   active: boolean
   planetOrbitAngle?: number
+  onActualPhaseChange?: (phase: number) => void
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const glowRef = useRef<THREE.Mesh>(null)
@@ -190,6 +192,9 @@ function RocketDot({
       waitPhase = Math.min(1, progress)
       rocketPhase = 0
     }
+    
+    // Notify parent of actual rocket phase (with waiting logic applied)
+    onActualPhaseChange?.(rocketPhase)
   }
 
   // Calculate rocket position
@@ -351,12 +356,14 @@ function Scene({
   rocketProgress,
   playbackSpeed = 1,
   hasResult = false,
+  onActualPhaseChange,
 }: {
   destinationPlanet: string
   onSelectPlanet: (name: string) => void
   rocketProgress: number
   playbackSpeed: number
   hasResult?: boolean
+  onActualPhaseChange?: (phase: number) => void
 }) {
   const destData = PLANETS.find(p => p.name === destinationPlanet) ?? PLANETS[3]
   // Show rocket if it's in flight (progress > 0) OR if a simulation is loaded but waiting (hasResult && progress === 0)
@@ -392,6 +399,7 @@ function Scene({
         progress={rocketProgress}
         active={hasJourney}
         planetOrbitAngle={planetAngleRef.current}
+        onActualPhaseChange={onActualPhaseChange}
       />
 
       {/* Planets */}
@@ -417,9 +425,10 @@ interface SolarSystemProps {
   onSelectPlanet: (name: string) => void
   result?: SimulationResult | null
   currentState?: SimulationState | null
+  onActualPhaseChange?: (phase: number) => void
 }
 
-export function SolarSystem({ destinationPlanet, onSelectPlanet, result, currentState, playbackSpeed = 1 }: SolarSystemProps & { playbackSpeed?: number }) {
+export function SolarSystem({ destinationPlanet, onSelectPlanet, result, currentState, playbackSpeed = 1, onActualPhaseChange }: SolarSystemProps & { playbackSpeed?: number }) {
   // Map simulation progress to journey fraction (0→1)
   // The rocket should travel the full arc to destination based on the flight phases
   const rocketProgress = useMemo(() => {
@@ -478,6 +487,7 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
           rocketProgress={rocketProgress}
           playbackSpeed={playbackSpeed}
           hasResult={hasResult}
+          onActualPhaseChange={onActualPhaseChange}
         />
       </Canvas>
     </div>

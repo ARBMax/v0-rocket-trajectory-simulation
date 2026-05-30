@@ -30,6 +30,7 @@ export default function RocketSimulator() {
   const [showSplash, setShowSplash] = useState(true)
   const [contentVisible, setContentVisible] = useState(false)
   const [destinationPlanet, setDestinationPlanet] = useState("Mars")
+  const [actualRocketPhase, setActualRocketPhase] = useState(0)
   const [currentTime, setCurrentTime] = useState("--:--:--")
   const [currentDate, setCurrentDate] = useState("--- -- ----")
   const [timezone, setTimezone] = useState("UTC")
@@ -268,7 +269,7 @@ export default function RocketSimulator() {
               <CustomObjectives result={result} />
 
               {/* Physics Equations Display */}
-              <PhysicsEquationsPanel currentState={rocketPhase === 0 ? null : currentState} params={params} />
+              <PhysicsEquationsPanel currentState={actualRocketPhase === 0 ? null : currentState} params={params} />
 
               {/* Export Mission */}
               <ExportMission result={result} params={params} destinationPlanet={destinationPlanet} />
@@ -314,10 +315,10 @@ export default function RocketSimulator() {
 
               {/* Telemetry Display */}
               <TelemetryDisplay
-                currentState={rocketPhase === 0 ? null : currentState}
+                currentState={actualRocketPhase === 0 ? null : currentState}
                 result={result}
                 theoretical={theoretical}
-                rocketPhase={rocketPhase}
+                rocketPhase={actualRocketPhase}
               />
 
               {/* Section Label */}
@@ -358,7 +359,7 @@ export default function RocketSimulator() {
 
                 <TabsContent value="visual" className="mt-4 space-y-4">
                   <div className="h-[400px] rounded border border-border/50 overflow-hidden bg-card/30">
-                    <RocketVisual currentState={rocketPhase === 0 ? null : currentState} result={result} />
+                    <RocketVisual currentState={actualRocketPhase === 0 ? null : currentState} result={result} />
                   </div>
                   
                   <div>
@@ -373,8 +374,9 @@ export default function RocketSimulator() {
                         destinationPlanet={destinationPlanet}
                         onSelectPlanet={setDestinationPlanet}
                         result={result}
-                        currentState={rocketPhase === 0 ? null : currentState}
+                        currentState={actualRocketPhase === 0 ? null : currentState}
                         playbackSpeed={playbackSpeed}
+                        onActualPhaseChange={setActualRocketPhase}
                       />
                     </div>
                     <p className="mt-2 text-[10px] font-mono text-muted-foreground text-center uppercase tracking-widest">
