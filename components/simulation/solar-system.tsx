@@ -379,6 +379,7 @@ function Scene({
   playbackSpeed = 1,
   hasResult = false,
   onActualPhaseChange,
+  planetAngleRef,
 }: {
   destinationPlanet: string
   onSelectPlanet: (name: string) => void
@@ -386,11 +387,11 @@ function Scene({
   playbackSpeed: number
   hasResult?: boolean
   onActualPhaseChange?: (phase: number) => void
+  planetAngleRef: React.MutableRefObject<number>
 }) {
   const destData = PLANETS.find(p => p.name === destinationPlanet) ?? PLANETS[3]
   // Show rocket if it's in flight (progress > 0) OR if a simulation is loaded but waiting (hasResult && progress === 0)
   const hasJourney = rocketProgress > 0 || hasResult
-  const planetAngleRef = useRef(0)
 
   return (
     <>
@@ -451,6 +452,9 @@ interface SolarSystemProps {
 }
 
 export function SolarSystem({ destinationPlanet, onSelectPlanet, result, currentState, playbackSpeed = 1, onActualPhaseChange }: SolarSystemProps & { playbackSpeed?: number }) {
+  // Persistent ref that survives Scene re-renders - holds the destination planet's current orbital angle
+  const planetAngleRef = useRef(0)
+  
   // Map simulation progress to journey fraction (0→1)
   // The rocket should travel the full arc to destination based on the flight phases
   const rocketProgress = useMemo(() => {
@@ -510,6 +514,7 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
           playbackSpeed={playbackSpeed}
           hasResult={hasResult}
           onActualPhaseChange={onActualPhaseChange}
+          planetAngleRef={planetAngleRef}
         />
       </Canvas>
     </div>
