@@ -19,12 +19,15 @@ export function AIAssistant() {
   const [isLoading, setIsLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive or loading state changes
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [messages])
+    const timer = setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      }
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [messages, isLoading])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -157,15 +160,15 @@ export function AIAssistant() {
 
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-40 w-96 max-w-[90vw] h-96 bg-background border border-border rounded-lg shadow-2xl flex flex-col overflow-hidden">
+        <div className="fixed bottom-24 right-6 z-40 w-96 max-w-[90vw] h-[500px] bg-background border border-border rounded-lg shadow-2xl flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#00ffcc] to-[#0088ff] px-4 py-3 text-white font-semibold text-sm">
+          <div className="bg-gradient-to-r from-[#00ffcc] to-[#0088ff] px-4 py-3 text-white font-semibold text-sm flex-shrink-0">
             Ozone Labs AI Assistant
           </div>
 
-          {/* Messages */}
-          <ScrollArea className="flex-1 p-4 border-b border-border">
-            <div className="space-y-4">
+          {/* Messages - with improved scroll area */}
+          <ScrollArea className="flex-1 overflow-hidden">
+            <div className="p-4 space-y-4">
               {messages.length === 0 ? (
                 <div className="text-xs text-muted-foreground text-center mt-8">
                   <p className="font-medium mb-2">Ask me anything about:</p>
@@ -197,7 +200,7 @@ export function AIAssistant() {
                       </div>
                     </div>
                   ))}
-                  <div ref={scrollRef} />
+                  <div ref={scrollRef} className="h-1" />
                 </>
               )}
               {isLoading && (
@@ -215,7 +218,7 @@ export function AIAssistant() {
           </ScrollArea>
 
           {/* Input */}
-          <form onSubmit={handleSubmit} className="p-3 border-t border-border">
+          <form onSubmit={handleSubmit} className="p-3 border-t border-border flex-shrink-0">
             <div className="flex gap-2">
               <Input
                 value={input}
