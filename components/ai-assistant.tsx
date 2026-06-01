@@ -60,6 +60,7 @@ export function AIAssistant() {
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
       let assistantMessage = ''
+      let rawData = ''
 
       if (reader) {
         try {
@@ -68,9 +69,11 @@ export function AIAssistant() {
             if (done) break
 
             const chunk = decoder.decode(value, { stream: true })
+            rawData += chunk
             const lines = chunk.split('\n')
 
             for (const line of lines) {
+              console.log('[v0] Stream line:', line.substring(0, 100))
               if (line.startsWith('data: ')) {
                 const data = line.slice(6).trim()
                 if (data === '[DONE]') continue
@@ -78,14 +81,15 @@ export function AIAssistant() {
 
                 try {
                   const parsed = JSON.parse(data)
+                  console.log('[v0] Parsed data:', parsed)
                   // Handle different response formats
                   if (parsed.type === 'text-delta' && parsed.delta) {
                     assistantMessage += parsed.delta
                   } else if (parsed.choices?.[0]?.delta?.content) {
                     assistantMessage += parsed.choices[0].delta.content
                   }
-                } catch {
-                  // Skip invalid JSON
+                } catch (e) {
+                  console.log('[v0] Failed to parse JSON:', line.substring(0, 100))
                 }
               }
             }
@@ -94,6 +98,9 @@ export function AIAssistant() {
           console.error('[v0] Stream reading error:', streamError)
         }
       }
+
+      console.log('[v0] Final assistantMessage:', assistantMessage.substring(0, 200))
+      console.log('[v0] Total raw data received:', rawData.length, 'bytes')
 
       if (assistantMessage.trim()) {
         setMessages((prev) => [
