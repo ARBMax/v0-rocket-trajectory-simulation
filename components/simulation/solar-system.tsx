@@ -22,7 +22,7 @@ export const PLANETS = [
 const EARTH_ORBIT = EARTH.orbitRadius
 
 // ─── Earth (orbiting departure) ─────────────────────────────────────────────────
-function EarthDeparture({ playbackSpeed = 1 }: { playbackSpeed: number }) {
+function EarthDeparture({ playbackSpeed = 1, onAngleUpdate }: { playbackSpeed: number; onAngleUpdate?: (angle: number) => void }) {
   const meshRef  = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
   const angleRef = useRef(0) // Start at angle 0 (right side of orbit)
@@ -39,6 +39,9 @@ function EarthDeparture({ playbackSpeed = 1 }: { playbackSpeed: number }) {
     if (meshRef.current) {
       meshRef.current.rotation.y += delta * 0.5 * playbackSpeed
     }
+
+    // Report current angle to parent
+    if (onAngleUpdate) onAngleUpdate(angleRef.current)
   })
 
   return (
@@ -149,12 +152,14 @@ function RocketDot({
   progress,
   active,
   planetAngleRef,
+  earthAngleRef,
   onActualPhaseChange,
 }: {
   destinationOrbit: number
   progress: number
   active: boolean
   planetAngleRef: React.MutableRefObject<number>
+  earthAngleRef: React.MutableRefObject<number>
   onActualPhaseChange?: (phase: number) => void
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
@@ -229,14 +234,28 @@ function RocketDot({
     }
 
     // Calculate rocket position based on phase
-    let x = EARTH_ORBIT  // Default: Earth's orbit (angle 0)
-    let z = 0
+    // Get Earth's current position on its orbit
+    const earthX = Math.cos(earthAngleRef.current) * EARTH_ORBIT
+    const earthZ = Math.sin(earthAngleRef.current) * EARTH_ORBIT
+    
+    let x = earthX  // Default: Earth's actual orbital position
+    let z = earthZ
     
     if (newRocketPhase > 0) {
-      // Rocket is traveling along the Hohmann transfer arc
+      // Rocket is traveling along the Hohmann transfer arc starting from Earth's current position
       const arcAngle = newRocketPhase * Math.PI
-      x = Math.cos(arcAngle) * semiMajor
-      z = Math.sin(arcAngle) * semiMinor
+      
+      // Calculate position relative to Earth's departure point
+      const arcX = Math.cos(arcAngle) * semiMajor
+      const arcZ = Math.sin(arcAngle) * semiMinor
+      
+      // Rotate the arc to start from Earth's current angle
+      const earthAngle = earthAngleRef.current
+      const rotatedX = Math.cos(earthAngle) * arcX - Math.sin(earthAngle) * arcZ
+      const rotatedZ = Math.sin(earthAngle) * arcX + Math.cos(earthAngle) * arcZ
+      
+      x = rotatedX
+      z = rotatedZ
 
       // At the final approach, smoothly transition to planet's orbital position
       if (newRocketPhase > 0.85) {
@@ -259,9 +278,12 @@ function RocketDot({
 
   if (!active) return null
 
-  // Initial position at Earth (will be updated by useFrame)
+  // Initial position at Earth's current location (will be updated by useFrame)
+  const earthX = Math.cos(earthAngleRef.current) * EARTH_ORBIT
+  const earthZ = Math.sin(earthAngleRef.current) * EARTH_ORBIT
+  
   return (
-    <group ref={groupRef} position={[EARTH_ORBIT, 0.08, 0]}>
+    <group ref={groupRef} position={[earthX, 0.08, earthZ]}>
       {/* Outer glow */}
       <mesh ref={glowRef}>
         <sphereGeometry args={[0.22, 16, 16]} />
@@ -391,6 +413,7 @@ function Scene({
   hasResult = false,
   onActualPhaseChange,
   planetAngleRef,
+  earthAngleRef,
 }: {
   destinationPlanet: string
   onSelectPlanet: (name: string) => void
@@ -399,6 +422,7 @@ function Scene({
   hasResult?: boolean
   onActualPhaseChange?: (phase: number) => void
   planetAngleRef: React.MutableRefObject<number>
+  earthAngleRef: React.MutableRefObject<number>
 }) {
   const destData = PLANETS.find(p => p.name === destinationPlanet) ?? PLANETS[3]
   // Show rocket if it's in flight (progress > 0) OR if a simulation is loaded but waiting (hasResult && progress === 0)
@@ -408,6 +432,11 @@ function Scene({
   const handleAngleUpdate = useCallback((angle: number) => {
     planetAngleRef.current = angle
   }, [planetAngleRef])
+
+  // Memoize the Earth angle update callback
+  const handleEarthAngleUpdate = useCallback((angle: number) => {
+    earthAngleRef.current = angle
+  }, [earthAngleRef])
 
   return (
     <>
@@ -425,7 +454,7 @@ function Scene({
       ))}
 
       {/* Fixed Earth departure marker */}
-      <EarthDeparture playbackSpeed={playbackSpeed} />
+      <EarthDeparture playbackSpeed={playbackSpeed} onAngleUpdate={handleEarthAngleUpdate} />
 
       {/* Transfer arc + rocket dot */}
       <RocketPath
@@ -438,6 +467,7 @@ function Scene({
         progress={rocketProgress}
         active={hasJourney}
         planetAngleRef={planetAngleRef}
+        earthAngleRef={earthAngleRef}
         onActualPhaseChange={onActualPhaseChange}
       />
 
@@ -468,8 +498,11 @@ interface SolarSystemProps {
 }
 
 export function SolarSystem({ destinationPlanet, onSelectPlanet, result, currentState, playbackSpeed = 1, onActualPhaseChange }: SolarSystemProps & { playbackSpeed?: number }) {
-  // Persistent ref that survives Scene re-renders - holds the destination planet's current orbital angle
+  // Persistent refs that survive Scene re-renders
+  // Holds the destination planet's current orbital angle
   const planetAngleRef = useRef(0)
+  // Holds Earth's current orbital angle
+  const earthAngleRef = useRef(0)
   
   // Map simulation progress to journey fraction (0→1)
   // The rocket should travel the full arc to destination based on the flight phases
@@ -531,6 +564,7 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
           hasResult={hasResult}
           onActualPhaseChange={onActualPhaseChange}
           planetAngleRef={planetAngleRef}
+          earthAngleRef={earthAngleRef}
         />
       </Canvas>
     </div>
