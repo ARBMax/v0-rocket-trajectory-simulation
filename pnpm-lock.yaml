@@ -11,6 +11,9 @@ importers:
       '@ai-sdk/react':
         specifier: ^3.0.195
         version: 3.0.195(react@19.2.4)(zod@3.25.76)
+      '@ai-sdk/xai':
+        specifier: ^3.0.93
+        version: 3.0.93(zod@3.25.76)
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.71.1(react@19.2.4))
@@ -213,6 +216,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/openai-compatible@2.0.48':
+    resolution: {integrity: sha512-z9MC6M4Oh/yUY/F/eszOtO8wc2nMz99XmZQKd2gWTtyIfe716xTfrKe3aYZKg20NZDtyjqPPKPSR+wqz7q1T7Q==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider-utils@4.0.21':
     resolution: {integrity: sha512-MtFUYI1/8mgDvRmaBDjbLJPFFrMG777AvSgyIFQtZHIMzm88R/12vYBBpnk7pfiWLFE1DSZzY4WDYzGbKAcmiw==}
     engines: {node: '>=18'}
@@ -238,6 +247,12 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       react: ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
+
+  '@ai-sdk/xai@3.0.93':
+    resolution: {integrity: sha512-HxazLIcSTgI0UQoq6ua0rcSR8+eXuNy0Qh4jkCY9EAWedYn6CQ0XD/j34U4/JYtO738xJdY+tE95okdqWqXkHA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
@@ -2153,6 +2168,12 @@ snapshots:
       '@vercel/oidc': 3.1.0
       zod: 3.25.76
 
+  '@ai-sdk/openai-compatible@2.0.48(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.10
+      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
+      zod: 3.25.76
+
   '@ai-sdk/provider-utils@4.0.21(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
@@ -2184,6 +2205,13 @@ snapshots:
       throttleit: 2.1.0
     transitivePeerDependencies:
       - zod
+
+  '@ai-sdk/xai@3.0.93(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/openai-compatible': 2.0.48(zod@3.25.76)
+      '@ai-sdk/provider': 3.0.10
+      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
+      zod: 3.25.76
 
   '@alloc/quick-lru@5.2.0': {}
 
