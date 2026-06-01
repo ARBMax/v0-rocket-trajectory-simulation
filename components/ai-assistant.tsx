@@ -105,15 +105,41 @@ export function AIAssistant() {
           },
         ])
       } else {
-        // If no content was streamed, try to read the full response as text
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            role: 'assistant',
-            content: 'No response received from AI.',
-          },
-        ])
+        // Check if there was an error in the response
+        const decoder = new TextDecoder()
+        const reader2 = response.body?.getReader()
+        let fullResponse = ''
+        if (reader2) {
+          try {
+            while (true) {
+              const { done, value } = await reader2.read()
+              if (done) break
+              fullResponse += decoder.decode(value, { stream: true })
+            }
+          } catch {
+            // ignore
+          }
+        }
+        
+        if (fullResponse.includes('credit card')) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: 'The AI Gateway needs billing setup. Please add a credit card to your Vercel account to enable AI features.',
+            },
+          ])
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              content: 'No response received from AI.',
+            },
+          ])
+        }
       }
     } catch (error) {
       console.error('[v0] AI Assistant error:', error)
