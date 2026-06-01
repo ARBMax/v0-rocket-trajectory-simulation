@@ -18,6 +18,7 @@ import { MissionIndicator } from "@/components/mission-indicator"
 import { KeyboardHints } from "@/components/keyboard-hints"
 import { CustomObjectives } from "@/components/custom-objectives"
 import { RocketGallery } from "@/components/rocket-gallery"
+import { AIAssistant } from "@/components/ai-assistant"
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
 import { Rocket, Radio, Clock, Shield, Smartphone, Monitor } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -455,6 +456,9 @@ export default function RocketSimulator() {
 
         {/* Keyboard Shortcuts Overlay */}
         <KeyboardHints />
+
+        {/* AI Assistant Chat */}
+        <AIAssistant />
       </div>
     </div>
   )
