@@ -37,16 +37,18 @@ export async function POST(req: Request) {
     const body = await req.json()
     const { messages } = body as { messages: Array<{ role: string; content: string }> }
 
-    const systemPrompt = `You are an AI assistant for the Ozone Labs Rocket Trajectory Simulation. Help users understand rocket physics, orbital mechanics, Hohmann transfers, and mission planning. Provide clear, educational explanations about trajectory optimization, planet targeting, fuel management, and launch windows.`
-
-    // Convert messages to the format streamText expects
-    const formattedMessages = messages.map((msg) => ({
-      role: msg.role as 'user' | 'assistant' | 'system',
-      content: msg.content,
-    }))
-
+    const userMessage = messages[messages.length - 1]?.content || ''
+    
+    // Try to use AI Gateway, but fallback to knowledge base on any error
+    // This approach ensures we always return a valid response
     try {
-      // Try using real AI Gateway first
+      const systemPrompt = `You are an AI assistant for the Ozone Labs Rocket Trajectory Simulation. Help users understand rocket physics, orbital mechanics, Hohmann transfers, and mission planning. Provide clear, educational explanations about trajectory optimization, planet targeting, fuel management, and launch windows.`
+
+      const formattedMessages = messages.map((msg) => ({
+        role: msg.role as 'user' | 'assistant' | 'system',
+        content: msg.content,
+      }))
+
       const result = streamText({
         model: 'openai/gpt-4-turbo',
         system: systemPrompt,
@@ -55,9 +57,8 @@ export async function POST(req: Request) {
 
       return result.toUIMessageStreamResponse()
     } catch (aiError) {
-      // Fallback to knowledge base if AI Gateway fails
-      console.log('[v0] AI Gateway unavailable, using knowledge base')
-      const userMessage = messages[messages.length - 1]?.content || ''
+      // Fallback to knowledge base on any error
+      console.log('[v0] Falling back to knowledge base due to AI error:', aiError instanceof Error ? aiError.message : 'Unknown error')
       const response = getKnowledgeBaseResponse(userMessage)
 
       // Return as SSE stream for consistency with AI responses
@@ -82,13 +83,28 @@ export async function POST(req: Request) {
       })
     }
   } catch (error) {
-    console.error('[v0 API] Error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Internal server error', details: String(error) }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    )
+    console.error('[v0 API] Fatal error:', error)
+    // Even on fatal error, return a knowledge base response
+    const response = 'I can help you understand rocket physics and orbital mechanics! Try asking about: Hohmann transfers, Escape velocity, Orbital mechanics, Rocket engines, Delta-v, Thrust-to-weight ratio, Specific impulse, Apogee and perigee, Transfer windows, Gravity assists, or Orbital inclination.'
+    
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            `data: ${JSON.stringify({ type: 'text-delta', delta: response })}\n\n`
+          )
+        )
+        controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'))
+        controller.close()
+      },
+    })
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    })
   }
 }
