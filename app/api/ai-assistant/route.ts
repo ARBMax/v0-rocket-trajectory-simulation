@@ -1,5 +1,4 @@
 import {
-  consumeStream,
   convertToModelMessages,
   streamText,
   UIMessage,
@@ -9,8 +8,6 @@ export const maxDuration = 30
 
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json()
-
-  console.log('[v0] API route POST called. messages:', messages)
 
   const systemPrompt = `You are an AI assistant for the Ozone Labs Rocket Trajectory Simulation. You help users understand and analyze rocket trajectories, orbital mechanics, Hohmann transfers, and mission parameters.
 
@@ -36,10 +33,7 @@ The simulation tracks:
     abortSignal: req.signal,
   })
 
-  console.log('[v0] streamText initialized')
-
   return result.toUIMessageStreamResponse({
     originalMessages: messages,
-    consumeSseStream: consumeStream,
   })
 }
