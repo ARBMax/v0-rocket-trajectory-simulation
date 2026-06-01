@@ -117,7 +117,11 @@ function RocketPath({
   const fullGeo     = useMemo(() => new THREE.BufferGeometry().setFromPoints(arcPoints),     [arcPoints])
   const travelledGeo = useMemo(() => new THREE.BufferGeometry().setFromPoints(travelledPoints), [travelledPoints])
 
-  if (!active) return null
+  if (!active) {
+    console.log("[v0] RocketPath NOT rendering - active is false. progress:", progress)
+    return null
+  }
+  console.log("[v0] RocketPath rendering. progress:", progress.toFixed(3), "traveled points:", travelledPoints.length)
 
   return (
     <group>
@@ -295,6 +299,7 @@ function Planet({
   const angleRef = useRef(Math.random() * Math.PI * 2)
 
   useFrame((_, delta) => {
+    console.log("[v0] Planet", data.name, "useFrame called. speedDelta:", (data.speed * delta * 0.5 * playbackSpeed).toFixed(6), "playbackSpeed:", playbackSpeed)
     angleRef.current += data.speed * delta * 0.5 * playbackSpeed
     if (groupRef.current) {
       groupRef.current.position.x = Math.cos(angleRef.current) * data.orbitRadius
