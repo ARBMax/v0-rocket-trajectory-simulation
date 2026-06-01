@@ -42,3 +42,4 @@ The simulation tracks:
     originalMessages: messages,
     consumeSseStream: consumeStream,
   })
+}
