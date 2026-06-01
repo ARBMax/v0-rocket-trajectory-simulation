@@ -103,12 +103,16 @@ function RocketPath({
   active: boolean
 }) {
   // Build a smooth arc from Earth position (9,0) to destination position
-  // using a half-ellipse (Hohmann transfer approximation) in the XZ plane
+  // using a proper Hohmann transfer ellipse in the XZ plane
   const { arcPoints, travelledPoints } = useMemo(() => {
     const startR = EARTH_ORBIT
     const endR   = destinationOrbit
+    // For a Hohmann transfer ellipse:
+    // - semiMajor = (r_departure + r_arrival) / 2
+    // - semiMinor = sqrt(r_departure * r_arrival)
+    // This is the geometric mean, which gives an accurate ellipse
     const semiMajor = (startR + endR) / 2
-    const semiMinor = Math.sqrt(startR * endR) * 0.85 // slight squash for visual appeal
+    const semiMinor = Math.sqrt(startR * endR)
 
     const N = 120
     const arc: THREE.Vector3[] = []
@@ -172,7 +176,7 @@ function RocketDot({
   const startR   = EARTH_ORBIT
   const endR     = destinationOrbit
   const semiMajor = (startR + endR) / 2
-  const semiMinor = Math.sqrt(startR * endR) * 0.85
+  const semiMinor = Math.sqrt(startR * endR) // Proper Hohmann ellipse (geometric mean)
 
   // useFrame runs every frame - check planet angle and update rocket position here
   useFrame(({ clock }) => {
