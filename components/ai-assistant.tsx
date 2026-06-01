@@ -62,29 +62,36 @@ export function AIAssistant() {
                   </ul>
                 </div>
               ) : (
-                messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex gap-2 ${
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
+                messages.map((message) => {
+                  console.log('[v0] Rendering message:', message.role, message.parts)
+                  return (
                     <div
-                      className={`max-w-xs rounded-lg px-3 py-2 text-sm ${
-                        message.role === 'user'
-                          ? 'bg-[#00ffcc] text-black rounded-br-none'
-                          : 'bg-muted text-foreground rounded-bl-none'
+                      key={message.id}
+                      className={`flex gap-2 ${
+                        message.role === 'user' ? 'justify-end' : 'justify-start'
                       }`}
                     >
-                      {message.parts.map((part, index) => {
-                        if (part.type === 'text') {
-                          return <span key={index}>{part.text}</span>
-                        }
-                        return null
-                      })}
+                      <div
+                        className={`max-w-xs rounded-lg px-3 py-2 text-sm ${
+                          message.role === 'user'
+                            ? 'bg-[#00ffcc] text-black rounded-br-none'
+                            : 'bg-muted text-foreground rounded-bl-none'
+                        }`}
+                      >
+                        {message.parts?.length > 0 ? (
+                          message.parts.map((part, index) => {
+                            if (part.type === 'text') {
+                              return <span key={index}>{part.text}</span>
+                            }
+                            return null
+                          })
+                        ) : (
+                          <span>No content</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  )
+                })
               )}
               {isLoading && (
                 <div className="flex gap-2 justify-start">
