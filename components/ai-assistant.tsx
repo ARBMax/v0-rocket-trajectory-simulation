@@ -14,12 +14,19 @@ export function AIAssistant() {
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: '/api/ai-assistant' }),
   })
+  
+  console.log('[v0] AIAssistant rendered. messages:', messages, 'status:', status)
 
   const isLoading = status === 'streaming' || status === 'submitted'
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || isLoading) return
+    console.log('[v0] handleSubmit called. input:', input, 'isLoading:', isLoading)
+    if (!input.trim() || isLoading) {
+      console.log('[v0] Early return: input.trim():', input.trim(), 'isLoading:', isLoading)
+      return
+    }
+    console.log('[v0] Calling sendMessage with:', input)
     sendMessage({ text: input })
     setInput('')
   }
