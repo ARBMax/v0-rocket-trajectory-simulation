@@ -26,8 +26,13 @@ export function AIAssistant() {
       console.log('[v0] Early return: input.trim():', input.trim(), 'isLoading:', isLoading)
       return
     }
-    console.log('[v0] Calling sendMessage with:', input)
-    sendMessage({ text: input })
+    console.log('[v0] Calling sendMessage with:', { text: input })
+    try {
+      sendMessage({ text: input })
+      console.log('[v0] sendMessage completed')
+    } catch (error) {
+      console.error('[v0] sendMessage error:', error)
+    }
     setInput('')
   }
 

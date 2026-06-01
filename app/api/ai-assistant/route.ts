@@ -10,6 +10,8 @@ export const maxDuration = 30
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json()
 
+  console.log('[v0] API route POST called. messages:', messages)
+
   const systemPrompt = `You are an AI assistant for the Ozone Labs Rocket Trajectory Simulation. You help users understand and analyze rocket trajectories, orbital mechanics, Hohmann transfers, and mission parameters.
 
 When answering questions:
@@ -30,19 +32,13 @@ The simulation tracks:
   const result = streamText({
     model: 'openai/gpt-5',
     system: systemPrompt,
-    // Note: convertToModelMessages is async in version 6
     messages: await convertToModelMessages(messages),
     abortSignal: req.signal,
   })
 
+  console.log('[v0] streamText initialized')
+
   return result.toUIMessageStreamResponse({
-    // Pass original messages for persistence - onFinish receives complete history
     originalMessages: messages,
-    onFinish: async ({ messages: allMessages, isAborted }) => {
-      if (isAborted) return
-      // allMessages includes the new AI response as UIMessage[]
-      // await saveChat({ chatId, messages: allMessages })
-    },
     consumeSseStream: consumeStream,
   })
-}
