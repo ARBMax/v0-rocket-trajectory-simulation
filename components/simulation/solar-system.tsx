@@ -305,7 +305,7 @@ function Planet({
       // Rotate planet on its axis - increased speed to 1.0 for better visibility
       meshRef.current.rotation.y += delta * 1.0 * playbackSpeed
     }
-  }, [data.speed, data.orbitRadius, playbackSpeed, onAngleUpdate])
+  })
 
   return (
     <group ref={groupRef}>
