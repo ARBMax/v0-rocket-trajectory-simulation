@@ -22,6 +22,15 @@ interface TelemetryDisplayProps {
     burnTime: number
   }
   rocketPhase?: number
+  hohmannData?: {
+    transferTime: number
+    transferTimeHours: number
+    transferTimeDays: number
+    semiMajorAxis: number
+    departureVelocity: number
+    arrivalVelocity: number
+    deltaV: number
+  }
 }
 
 export function TelemetryDisplay({
@@ -29,6 +38,7 @@ export function TelemetryDisplay({
   result,
   theoretical,
   rocketPhase = 0,
+  hohmannData,
 }: TelemetryDisplayProps) {
   // Determine if we're moving based on currentState
   // If currentState is null, the rocket is waiting (pre-launch)
@@ -137,9 +147,41 @@ export function TelemetryDisplay({
     },
   ]
 
+  // Add transfer telemetry if Hohmann data is available
+  const transferMetrics = hohmannData ? [
+    {
+      icon: Timer,
+      label: "TRANSFER TIME",
+      value: hohmannData.transferTimeDays.toFixed(1),
+      unit: "days",
+      sub: `${hohmannData.transferTimeHours.toFixed(0)}h`,
+    },
+    {
+      icon: TrendingUp,
+      label: "DELTA-V",
+      value: hohmannData.deltaV.toFixed(1),
+      unit: "m/s",
+      sub: `Total burn ${(hohmannData.deltaV / 9.81).toFixed(1)}G·s`,
+    },
+    {
+      icon: Gauge,
+      label: "DEPARTURE VELOCITY",
+      value: hohmannData.departureVelocity.toFixed(1),
+      unit: "m/s",
+      sub: `Earth orbital`,
+    },
+    {
+      icon: Target,
+      label: "ARRIVAL VELOCITY",
+      value: hohmannData.arrivalVelocity.toFixed(1),
+      unit: "m/s",
+      sub: `Target orbital`,
+    },
+  ] : []
+
   return (
     <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-8">
-      {metrics.map((metric, i) => (
+      {[...metrics, ...transferMetrics].map((metric, i) => (
         <div
           key={i}
           className="relative rounded border border-border/50 bg-card/50 backdrop-blur-sm p-3 group hover:border-primary/30 transition-colors"

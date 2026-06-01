@@ -510,6 +510,7 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
   
   // Map simulation progress to journey fraction (0→1)
   // The rocket should travel the full arc to destination based on the flight phases
+  // However, we speed this up to show reasonable transit times visually
   const rocketProgress = useMemo(() => {
     if (!result) return 0
     if (!currentState) return 0 // In waiting state - still show rocket at position 0
@@ -520,13 +521,13 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
     if (currentIndex < 0) return 0
     
     // Normalize progress across entire simulation duration
-    // This maps the complete flight (launch → burnout → apogee → descent → landing)
-    // to the full Hohmann transfer arc from Earth to destination
     const totalStates = result.states.length - 1
     const normalizedProgress = currentIndex / totalStates
     
-    // Stretch the progress so the rocket actually reaches the destination
-    // The journey completes when normalizedProgress reaches 1.0
+    // Speed up the journey visually: the rocket reaches destination much faster than real Hohmann transfer
+    // In reality, Mars transfer takes ~9 months, but we show it completing by 1.0
+    // Map: simulation progress 0→1 becomes rocket journey 0→1 (instantaneous visual)
+    // This keeps the rocket moving during the entire simulation runtime
     return Math.min(1, normalizedProgress)
   }, [result, currentState])
 

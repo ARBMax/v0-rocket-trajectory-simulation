@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRocketSimulation } from "@/hooks/use-rocket-simulation"
 import { useMobileView } from "@/lib/mobile-context"
+import { calculateHohmannTransfer } from "@/lib/rocket-physics"
 import { ControlPanel } from "@/components/simulation/control-panel"
 import { TrajectoryChart, VelocityChart, ForcesChart } from "@/components/simulation/trajectory-chart"
 import { TelemetryDisplay } from "@/components/simulation/telemetry-display"
@@ -36,6 +37,29 @@ export default function RocketSimulator() {
   const [currentDate, setCurrentDate] = useState("--- -- ----")
   const [timezone, setTimezone] = useState("UTC")
   const { isMobileFormat, toggleMobileFormat } = useMobileView()
+
+  // Planet orbital data (AU converted to simulation units, with AU = 10)
+  const planetOrbits: Record<string, number> = {
+    Mercury: 4.5,   // 0.39 AU
+    Venus: 6.5,     // 0.72 AU
+    Mars: 12.0,     // 1.52 AU
+    Jupiter: 17.0,  // 5.20 AU
+    Saturn: 22.0,   // 9.54 AU
+    Uranus: 27.0,   // 19.19 AU
+    Neptune: 31.0,  // 30.07 AU
+  }
+
+  // Calculate Hohmann transfer data based on destination planet
+  const hohmannData = useMemo(() => {
+    const destOrbit = planetOrbits[destinationPlanet] || 12.0
+    const earthOrbit = 10.0 // 1 AU in simulation units
+    
+    // Scale orbital distances from simulation units to AU (1 simulation unit = 0.1 AU)
+    const earthOrbitAU = earthOrbit * 1.496e11 // meters (1 AU = 1.496e11 m)
+    const destOrbitAU = destOrbit * 1.496e11
+    
+    return calculateHohmannTransfer(earthOrbitAU, destOrbitAU)
+  }, [destinationPlanet])
 
   // Check if user is already logged in (from localStorage)
   useEffect(() => {
@@ -320,6 +344,7 @@ export default function RocketSimulator() {
                 result={result}
                 theoretical={theoretical}
                 rocketPhase={actualRocketPhase}
+                hohmannData={hohmannData}
               />
 
               {/* Section Label */}

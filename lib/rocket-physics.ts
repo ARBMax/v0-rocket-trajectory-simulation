@@ -281,3 +281,50 @@ export const ROCKET_PRESETS: Record<string, RocketParams> = {
     crossSectionalArea: 0.1,
   },
 }
+
+// Calculate Hohmann transfer time and telemetry data
+export function calculateHohmannTransfer(
+  departureOrbitRadius: number, // meters (Earth's orbital radius)
+  arrivalOrbitRadius: number,   // meters (destination planet's orbital radius)
+  sunMass: number = 1.989e30,   // kg (Sun's mass)
+): {
+  transferTime: number           // seconds
+  transferTimeHours: number      // hours
+  transferTimeDays: number       // days
+  semiMajorAxis: number          // meters
+  departureVelocity: number      // m/s (orbital velocity at Earth)
+  arrivalVelocity: number        // m/s (orbital velocity at destination)
+  deltaV: number                 // m/s (total velocity change needed)
+} {
+  const G = 6.674e-11 // gravitational constant
+  
+  // Hohmann transfer semi-major axis: (r1 + r2) / 2
+  const semiMajorAxis = (departureOrbitRadius + arrivalOrbitRadius) / 2
+  
+  // Transfer time using Kepler's third law: T = 2π√(a³/GM)
+  // For half the transfer ellipse: t_transfer = π√(a³/GM)
+  const transferTimeSeconds = Math.PI * Math.sqrt((semiMajorAxis ** 3) / (G * sunMass))
+  
+  // Orbital velocities: v = √(GM/r)
+  const departureVelocity = Math.sqrt((G * sunMass) / departureOrbitRadius)
+  const arrivalVelocity = Math.sqrt((G * sunMass) / arrivalOrbitRadius)
+  
+  // Transfer orbit velocities at perihelion (departure) and aphelion (arrival)
+  const transferPeriVelocity = Math.sqrt((G * sunMass) * (2 / departureOrbitRadius - 1 / semiMajorAxis))
+  const transferApoVelocity = Math.sqrt((G * sunMass) * (2 / arrivalOrbitRadius - 1 / semiMajorAxis))
+  
+  // Total delta-v for Hohmann transfer
+  const deltaV_depart = transferPeriVelocity - departureVelocity
+  const deltaV_arrive = arrivalVelocity - transferApoVelocity
+  const deltaV = deltaV_depart + deltaV_arrive
+  
+  return {
+    transferTime: transferTimeSeconds,
+    transferTimeHours: transferTimeSeconds / 3600,
+    transferTimeDays: transferTimeSeconds / (3600 * 24),
+    semiMajorAxis,
+    departureVelocity,
+    arrivalVelocity,
+    deltaV,
+  }
+}
