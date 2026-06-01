@@ -301,8 +301,11 @@ function Planet({
       groupRef.current.position.z = Math.sin(angleRef.current) * data.orbitRadius
       if (onAngleUpdate) onAngleUpdate(angleRef.current)
     }
-    if (meshRef.current) meshRef.current.rotation.y += delta * 0.4 * playbackSpeed
-  })
+    if (meshRef.current) {
+      // Rotate planet on its axis - increased speed to 1.0 for better visibility
+      meshRef.current.rotation.y += delta * 1.0 * playbackSpeed
+    }
+  }, [data.speed, data.orbitRadius, playbackSpeed, onAngleUpdate])
 
   return (
     <group ref={groupRef}>
