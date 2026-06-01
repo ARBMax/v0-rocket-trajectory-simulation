@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     }))
 
     const result = streamText({
-      model: groq('mixtral-8x7b-32768'),
+      model: groq('llama-3.1-70b-versatile'),
       system: systemPrompt,
       messages: formattedMessages,
     })
