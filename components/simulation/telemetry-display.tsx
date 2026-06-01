@@ -118,11 +118,14 @@ export function TelemetryDisplay({
     {
       icon: Fuel,
       label: "FUEL",
-      value: displayState ? formatValue(displayState.fuelRemaining, 2) : "0.00",
-      unit: "kg",
+      value: displayState 
+        ? `${((displayState.fuelRemaining / (result?.states[0]?.fuelRemaining ?? 1)) * 100).toFixed(0)}%`
+        : "100%",
+      unit: "",
       progress: displayState
         ? (displayState.fuelRemaining / (result?.states[0]?.fuelRemaining ?? 1)) * 100
         : 100,
+      sub: displayState ? formatValue(displayState.fuelRemaining, 1) : "0.0",
     },
     {
       icon: Target,

@@ -10,12 +10,12 @@ import {
 } from "@/lib/rocket-physics"
 
 export function useRocketSimulation(userEmail?: string) {
-  const [params, setParams] = useState<RocketParams>(ROCKET_PRESETS["Model Rocket"])
+  const [params, setParams] = useState<RocketParams>(ROCKET_PRESETS["Medium Rocket"])
   const [result, setResult] = useState<SimulationResult | null>(null)
   const [isRunning, setIsRunning] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
-  const [selectedPreset, setSelectedPreset] = useState<string>("Model Rocket")
+  const [selectedPreset, setSelectedPreset] = useState<string>("Medium Rocket")
 
   const animationRef = useRef<number | null>(null)
   const lastTimeRef = useRef<number>(0)

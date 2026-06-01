@@ -97,12 +97,14 @@ function RocketPath({
   destinationOrbit,
   progress,           // 0..1 how far along the journey
   active,
+  earthAngleRef,
 }: {
   destinationOrbit: number
   progress: number
   active: boolean
+  earthAngleRef: React.MutableRefObject<number>
 }) {
-  // Build a smooth arc from Earth position (9,0) to destination position
+  // Build a smooth arc from Earth position to destination position
   // using a proper Hohmann transfer ellipse in the XZ plane
   const { arcPoints, travelledPoints } = useMemo(() => {
     const startR = EARTH_ORBIT
@@ -116,18 +118,27 @@ function RocketPath({
 
     const N = 120
     const arc: THREE.Vector3[] = []
+    
+    // Get Earth's current orbital angle to rotate the arc
+    const earthAngle = earthAngleRef.current
+    
     for (let i = 0; i <= N; i++) {
       // angle from 0 (Earth side) to PI (destination side)
       const t = (i / N) * Math.PI
       const x = Math.cos(t) * semiMajor
       const z = Math.sin(t) * semiMinor
-      arc.push(new THREE.Vector3(x, 0.08, z))
+      
+      // Rotate the arc to align with Earth's current orbital position
+      const rotatedX = Math.cos(earthAngle) * x - Math.sin(earthAngle) * z
+      const rotatedZ = Math.sin(earthAngle) * x + Math.cos(earthAngle) * z
+      
+      arc.push(new THREE.Vector3(rotatedX, 0.08, rotatedZ))
     }
     // Travelled portion
     const cutoff = Math.round(progress * N)
     const travelled = arc.slice(0, cutoff + 1)
     return { arcPoints: arc, travelledPoints: travelled }
-  }, [destinationOrbit, progress])
+  }, [destinationOrbit, progress, earthAngleRef.current])
 
   const fullGeo     = useMemo(() => new THREE.BufferGeometry().setFromPoints(arcPoints),     [arcPoints])
   const travelledGeo = useMemo(() => new THREE.BufferGeometry().setFromPoints(travelledPoints), [travelledPoints])
@@ -465,6 +476,7 @@ function Scene({
         destinationOrbit={destData.orbitRadius}
         progress={rocketProgress}
         active={hasJourney}
+        earthAngleRef={earthAngleRef}
       />
       <RocketDot
         destinationOrbit={destData.orbitRadius}
