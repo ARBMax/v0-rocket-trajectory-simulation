@@ -15,11 +15,15 @@ export function AIAssistant() {
     transport: new DefaultChatTransport({ api: '/api/ai-assistant' }),
   })
 
+  console.log('[v0] AIAssistant - messages:', messages.length, 'status:', status, 'isOpen:', isOpen)
+
   const isLoading = status === 'streaming' || status === 'submitted'
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('[v0] handleSubmit - input:', input, 'isLoading:', isLoading)
     if (!input.trim() || isLoading) return
+    console.log('[v0] sendMessage called with:', input)
     sendMessage({ text: input })
     setInput('')
   }
