@@ -1,10 +1,10 @@
 import { streamText } from 'ai'
-import { createXai } from '@ai-sdk/xai'
+import { createGroq } from '@ai-sdk/groq'
 
 export const maxDuration = 30
 
-const xai = createXai({
-  apiKey: process.env.GROK_API_KEY,
+const groq = createGroq({
+  apiKey: process.env.GROQ_API_KEY,
 })
 
 export async function POST(req: Request) {
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     }))
 
     const result = streamText({
-      model: xai('grok-2'),
+      model: groq('mixtral-8x7b-32768'),
       system: systemPrompt,
       messages: formattedMessages,
     })
