@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     }))
 
     const result = streamText({
-      model: 'openai/gpt-5',
+      model: 'xai/grok-2',
       system: systemPrompt,
       messages: formattedMessages,
     })
