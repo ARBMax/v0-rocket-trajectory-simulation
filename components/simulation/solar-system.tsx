@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useMemo, useEffect } from "react"
+import { useRef, useState, useMemo, useEffect, useCallback } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls, Stars, Text, Html } from "@react-three/drei"
 import * as THREE from "three"
@@ -117,11 +117,7 @@ function RocketPath({
   const fullGeo     = useMemo(() => new THREE.BufferGeometry().setFromPoints(arcPoints),     [arcPoints])
   const travelledGeo = useMemo(() => new THREE.BufferGeometry().setFromPoints(travelledPoints), [travelledPoints])
 
-  if (!active) {
-    console.log("[v0] RocketPath NOT rendering - active is false. progress:", progress)
-    return null
-  }
-  console.log("[v0] RocketPath rendering. progress:", progress.toFixed(3), "traveled points:", travelledPoints.length)
+  if (!active) return null
 
   return (
     <group>
@@ -299,7 +295,6 @@ function Planet({
   const angleRef = useRef(Math.random() * Math.PI * 2)
 
   useFrame((_, delta) => {
-    console.log("[v0] Planet", data.name, "useFrame called. speedDelta:", (data.speed * delta * 0.5 * playbackSpeed).toFixed(6), "playbackSpeed:", playbackSpeed)
     angleRef.current += data.speed * delta * 0.5 * playbackSpeed
     if (groupRef.current) {
       groupRef.current.position.x = Math.cos(angleRef.current) * data.orbitRadius
@@ -401,6 +396,11 @@ function Scene({
   // Show rocket if it's in flight (progress > 0) OR if a simulation is loaded but waiting (hasResult && progress === 0)
   const hasJourney = rocketProgress > 0 || hasResult
 
+  // Memoize the onAngleUpdate callback so it doesn't create a new reference every render
+  const handleAngleUpdate = useCallback((angle: number) => {
+    planetAngleRef.current = angle
+  }, [planetAngleRef])
+
   return (
     <>
       <ambientLight intensity={0.15} />
@@ -441,7 +441,7 @@ function Scene({
           isDestination={destinationPlanet === p.name}
           onClick={() => onSelectPlanet(p.name)}
           playbackSpeed={playbackSpeed}
-          onAngleUpdate={destinationPlanet === p.name ? (angle) => (planetAngleRef.current = angle) : undefined}
+          onAngleUpdate={destinationPlanet === p.name ? handleAngleUpdate : undefined}
         />
       ))}
 
