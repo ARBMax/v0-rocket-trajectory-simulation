@@ -183,11 +183,13 @@ function RocketDot({
   const rocketPhaseRef = useRef<number>(0)
   const hasLaunchedRef = useRef<boolean>(false)
   const launchProgressRef = useRef<number>(0)
+  const hasLandedRef = useRef<boolean>(false)
 
   const startR   = EARTH_ORBIT
   const endR     = destinationOrbit
   const semiMajor = (startR + endR) / 2
   const semiMinor = Math.sqrt(startR * endR) // Proper Hohmann ellipse (geometric mean)
+  const LANDING_DISTANCE = 0.5 // How close to planet before landing (in simulation units)
 
   // useFrame runs every frame - check planet angle and update rocket position here
   useFrame(({ clock }) => {
@@ -253,8 +255,13 @@ function RocketDot({
     const earthX = Math.cos(earthAngleRef.current) * EARTH_ORBIT
     const earthZ = Math.sin(earthAngleRef.current) * EARTH_ORBIT
     
+    // Get destination planet's current position
+    const planetX = Math.cos(planetAngleRef.current) * destinationOrbit
+    const planetZ = Math.sin(planetAngleRef.current) * destinationOrbit
+    
     let x = earthX  // Default: Earth's actual orbital position
     let z = earthZ
+    let hasLanded = false
     
     if (newRocketPhase > 0) {
       // Rocket is traveling along the Hohmann transfer arc starting from Earth's current position
@@ -279,6 +286,16 @@ function RocketDot({
         const destZ = Math.sin(planetAngleRef.current) * destinationOrbit
         x = x + (destX - x) * approachFactor
         z = z + (destZ - z) * approachFactor
+        
+        // Check landing: if rocket is very close to destination planet
+        const distToPlanet = Math.sqrt((x - planetX) ** 2 + (z - planetZ) ** 2)
+        if (distToPlanet < LANDING_DISTANCE) {
+          hasLanded = true
+          hasLandedRef.current = true
+          // Snap to exact planet position
+          x = planetX
+          z = planetZ
+        }
       }
     }
 
@@ -313,7 +330,7 @@ function RocketDot({
       <Html position={[0, 0.45, 0]} center style={{ pointerEvents: "none" }}>
         <div className="font-mono text-[9px] uppercase tracking-widest text-primary whitespace-nowrap
                         border border-primary/50 bg-background/80 px-1.5 py-0.5 rounded">
-          {rocketPhaseRef.current > 0 ? `Rocket — ${Math.round(rocketPhaseRef.current * 100)}%` : `Waiting for intercept`}
+          {hasLandedRef.current ? `Rocket — Landed` : rocketPhaseRef.current > 0 ? `Rocket — ${Math.round(rocketPhaseRef.current * 100)}%` : `Waiting for intercept`}
         </div>
       </Html>
     </group>
