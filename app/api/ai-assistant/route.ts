@@ -1,18 +1,24 @@
-import { streamText, convertToModelMessages, UIMessage } from 'ai'
+import { streamText } from 'ai'
 
 export const maxDuration = 30
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { messages } = body as { messages: UIMessage[] }
+    const { messages } = body as { messages: Array<{ role: string; content: string }> }
 
     const systemPrompt = `You are an AI assistant for the Ozone Labs Rocket Trajectory Simulation. Help users understand rocket physics, orbital mechanics, Hohmann transfers, and mission planning. Provide clear, educational explanations about trajectory optimization, planet targeting, fuel management, and launch windows.`
+
+    // Convert messages to the format streamText expects
+    const formattedMessages = messages.map((msg) => ({
+      role: msg.role as 'user' | 'assistant' | 'system',
+      content: msg.content,
+    }))
 
     const result = streamText({
       model: 'openai/gpt-5',
       system: systemPrompt,
-      messages: await convertToModelMessages(messages),
+      messages: formattedMessages,
     })
 
     return result.toUIMessageStreamResponse()
