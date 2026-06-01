@@ -153,6 +153,8 @@ function RocketDot({
   const glowRef = useRef<THREE.Mesh>(null)
   const groupRef = useRef<THREE.Group>(null)
   const rocketPhaseRef = useRef<number>(0)
+  const hasLaunchedRef = useRef<boolean>(false)
+  const launchProgressRef = useRef<number>(0)
 
   const startR   = EARTH_ORBIT
   const endR     = destinationOrbit
@@ -188,17 +190,27 @@ function RocketDot({
         angularGap = Math.PI * 2 - angularGap
       }
       
-      // Launch window: planet must be within ~30 degrees of intercept (0.524 radians)
-      const launchWindowSize = 0.524
+      // Launch window: planet must be within ~10 degrees of intercept (0.175 radians)
+      // This is a tight tolerance for precise launch timing
+      const launchWindowSize = 0.175
       const isInLaunchWindow = angularGap < launchWindowSize
       
-      // Once the planet reaches the launch window, rocket begins its journey
-      if (isInLaunchWindow) {
-        newRocketPhase = progress
+      // First time entering launch window: capture progress and mark as launched
+      if (isInLaunchWindow && !hasLaunchedRef.current) {
+        hasLaunchedRef.current = true
+        launchProgressRef.current = progress
+      }
+      
+      // If rocket has launched, use the progress from launch moment to current
+      // This ensures smooth motion from the exact launch point onwards
+      if (hasLaunchedRef.current) {
+        newRocketPhase = progress - launchProgressRef.current
       }
       // else: rocket stays in waiting state (newRocketPhase = 0)
     } else {
-      // No simulation running - rocket waits at Earth
+      // Simulation ended or not active - reset launch state
+      hasLaunchedRef.current = false
+      launchProgressRef.current = 0
       newRocketPhase = 0
     }
 
