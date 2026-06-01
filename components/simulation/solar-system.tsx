@@ -169,14 +169,27 @@ function RocketDot({
       glowRef.current.scale.setScalar(s)
     }
 
-    // SINGLE SOURCE OF TRUTH: Calculate rocketPhase based on simulation progress
-    // The rocket waits at Earth until launched, then follows the transfer arc
+    // SINGLE SOURCE OF TRUTH: Calculate rocketPhase based on planet position
+    // Rocket waits at Earth until the planet reaches the correct intercept angle
     let newRocketPhase = 0
     
     if (active && progress > 0) {
-      // Launch immediately when simulation starts (progress > 0)
-      // In the future, this could check planet angle: canLaunch
-      newRocketPhase = progress
+      // For Hohmann transfer, the intercept angle is at π (180°)
+      const targetInterceptAngle = Math.PI
+      
+      // Calculate angular gap from current planet position to intercept
+      const currentPlanetAngle = planetAngleRef.current
+      const angularGap = (targetInterceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
+      
+      // Launch window: planet must be within ~45 degrees of intercept (0.785 radians)
+      const launchWindowSize = 0.785
+      const isInLaunchWindow = angularGap < launchWindowSize || angularGap > (Math.PI * 2 - launchWindowSize)
+      
+      // Once the planet reaches the launch window, rocket begins its journey
+      if (isInLaunchWindow) {
+        newRocketPhase = progress
+      }
+      // else: rocket stays in waiting state (newRocketPhase = 0)
     } else {
       // No simulation running - rocket waits at Earth
       newRocketPhase = 0
