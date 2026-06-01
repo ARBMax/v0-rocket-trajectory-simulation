@@ -21,20 +21,28 @@ export const PLANETS = [
 
 const EARTH_ORBIT = EARTH.orbitRadius
 
-// ─── Earth (fixed departure) ──────────────────────────────────────────────────
-function EarthDeparture() {
+// ─── Earth (orbiting departure) ─────────────────────────────────────────────────
+function EarthDeparture({ playbackSpeed = 1 }: { playbackSpeed: number }) {
   const meshRef  = useRef<THREE.Mesh>(null)
+  const groupRef = useRef<THREE.Group>(null)
+  const angleRef = useRef(0) // Start at angle 0 (right side of orbit)
 
   useFrame((_, delta) => {
-    if (meshRef.current) meshRef.current.rotation.y += delta * 0.5
+    // Earth orbits around the sun
+    angleRef.current += EARTH.speed * delta * 0.5 * playbackSpeed
+    
+    if (groupRef.current) {
+      groupRef.current.position.x = Math.cos(angleRef.current) * EARTH.orbitRadius
+      groupRef.current.position.z = Math.sin(angleRef.current) * EARTH.orbitRadius
+    }
+    
+    if (meshRef.current) {
+      meshRef.current.rotation.y += delta * 0.5 * playbackSpeed
+    }
   })
 
-  // Fixed position at angle 0 on Earth's orbit
-  const earthX = EARTH.orbitRadius
-  const earthZ = 0
-
   return (
-    <group position={[earthX, 0, earthZ]}>
+    <group ref={groupRef}>
       {/* Departure glow ring */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[EARTH.radius + 0.15, EARTH.radius + 0.28, 32]} />
@@ -417,7 +425,7 @@ function Scene({
       ))}
 
       {/* Fixed Earth departure marker */}
-      <EarthDeparture />
+      <EarthDeparture playbackSpeed={playbackSpeed} />
 
       {/* Transfer arc + rocket dot */}
       <RocketPath
