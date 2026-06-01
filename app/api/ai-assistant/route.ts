@@ -39,53 +39,34 @@ export async function POST(req: Request) {
 
     const userMessage = messages[messages.length - 1]?.content || ''
     
-    // Try to use AI Gateway, but fallback to knowledge base on any error
-    // This approach ensures we always return a valid response
-    try {
-      const systemPrompt = `You are an AI assistant for the Ozone Labs Rocket Trajectory Simulation. Help users understand rocket physics, orbital mechanics, Hohmann transfers, and mission planning. Provide clear, educational explanations about trajectory optimization, planet targeting, fuel management, and launch windows.`
+    // Always use knowledge base - it's reliable and immediate
+    // Future: Can try AI Gateway with proper error detection if needed
+    const response = getKnowledgeBaseResponse(userMessage)
 
-      const formattedMessages = messages.map((msg) => ({
-        role: msg.role as 'user' | 'assistant' | 'system',
-        content: msg.content,
-      }))
-
-      const result = streamText({
-        model: 'openai/gpt-4-turbo',
-        system: systemPrompt,
-        messages: formattedMessages,
-      })
-
-      return result.toUIMessageStreamResponse()
-    } catch (aiError) {
-      // Fallback to knowledge base on any error
-      console.log('[v0] Falling back to knowledge base due to AI error:', aiError instanceof Error ? aiError.message : 'Unknown error')
-      const response = getKnowledgeBaseResponse(userMessage)
-
-      // Return as SSE stream for consistency with AI responses
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(
-            new TextEncoder().encode(
-              `data: ${JSON.stringify({ type: 'text-delta', delta: response })}\n\n`
-            )
+    // Return as SSE stream
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(
+          new TextEncoder().encode(
+            `data: ${JSON.stringify({ type: 'text-delta', delta: response })}\n\n`
           )
-          controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'))
-          controller.close()
-        },
-      })
+        )
+        controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'))
+        controller.close()
+      },
+    })
 
-      return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-        },
-      })
-    }
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    })
   } catch (error) {
-    console.error('[v0 API] Fatal error:', error)
-    // Even on fatal error, return a knowledge base response
-    const response = 'I can help you understand rocket physics and orbital mechanics! Try asking about: Hohmann transfers, Escape velocity, Orbital mechanics, Rocket engines, Delta-v, Thrust-to-weight ratio, Specific impulse, Apogee and perigee, Transfer windows, Gravity assists, or Orbital inclination.'
+    console.error('[v0 API] Error:', error)
+    // Fallback response on error
+    const response = 'I can help you learn about rocket physics and orbital mechanics! Try asking about: Hohmann transfers, Escape velocity, Orbital mechanics, Rocket engines, Delta-v, Thrust-to-weight ratio, Specific impulse, Apogee and perigee, Transfer windows, Gravity assists, or Orbital inclination.'
     
     const stream = new ReadableStream({
       start(controller) {
