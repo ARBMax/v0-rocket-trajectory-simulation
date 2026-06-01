@@ -179,11 +179,20 @@ function RocketDot({
       
       // Calculate angular gap from current planet position to intercept
       const currentPlanetAngle = planetAngleRef.current
-      const angularGap = (targetInterceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
       
-      // Launch window: planet must be within ~45 degrees of intercept (0.785 radians)
-      const launchWindowSize = 0.785
-      const isInLaunchWindow = angularGap < launchWindowSize || angularGap > (Math.PI * 2 - launchWindowSize)
+      // Normalize the angle difference to [0, 2π)
+      let angularGap = (targetInterceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
+      
+      // Shortest distance (could be forward or backward around the circle)
+      if (angularGap > Math.PI) {
+        angularGap = Math.PI * 2 - angularGap
+      }
+      
+      // Launch window: planet must be within ~30 degrees of intercept (0.524 radians)
+      const launchWindowSize = 0.524
+      const isInLaunchWindow = angularGap < launchWindowSize
+      
+      console.log("[v0] Planet angle:", (currentPlanetAngle * 180 / Math.PI).toFixed(1), "° | Gap to intercept:", (angularGap * 180 / Math.PI).toFixed(1), "° | In window:", isInLaunchWindow, "| Progress:", progress.toFixed(3))
       
       // Once the planet reaches the launch window, rocket begins its journey
       if (isInLaunchWindow) {
