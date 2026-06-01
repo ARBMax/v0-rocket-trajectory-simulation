@@ -192,8 +192,6 @@ function RocketDot({
       const launchWindowSize = 0.524
       const isInLaunchWindow = angularGap < launchWindowSize
       
-      console.log("[v0] Planet angle:", (currentPlanetAngle * 180 / Math.PI).toFixed(1), "° | Gap to intercept:", (angularGap * 180 / Math.PI).toFixed(1), "° | In window:", isInLaunchWindow, "| Progress:", progress.toFixed(3))
-      
       // Once the planet reaches the launch window, rocket begins its journey
       if (isInLaunchWindow) {
         newRocketPhase = progress
