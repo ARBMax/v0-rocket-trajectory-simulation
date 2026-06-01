@@ -60,6 +60,7 @@ export function AIAssistant() {
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
       let assistantMessage = ''
+      let errorMessage = ''
 
       if (reader) {
         try {
@@ -78,7 +79,11 @@ export function AIAssistant() {
 
                 try {
                   const parsed = JSON.parse(data)
-                  // Handle different response formats
+                  // Handle error messages
+                  if (parsed.type === 'error' && parsed.errorText) {
+                    errorMessage = parsed.errorText
+                  }
+                  // Handle text deltas
                   if (parsed.type === 'text-delta' && parsed.delta) {
                     assistantMessage += parsed.delta
                   } else if (parsed.choices?.[0]?.delta?.content) {
@@ -95,7 +100,17 @@ export function AIAssistant() {
         }
       }
 
-      if (assistantMessage.trim()) {
+      // Show error if one was received
+      if (errorMessage) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: (Date.now() + 1).toString(),
+            role: 'assistant',
+            content: errorMessage,
+          },
+        ])
+      } else if (assistantMessage.trim()) {
         setMessages((prev) => [
           ...prev,
           {
