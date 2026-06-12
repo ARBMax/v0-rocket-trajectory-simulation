@@ -18,32 +18,44 @@ function FormattedMessage({ content }: { content: string }) {
   const sections = content.split(/\*\*/).map((part, idx) => {
     // Even indices are normal text, odd are headers
     if (idx % 2 === 1) {
-      return <div key={idx} className="font-bold mt-2 mb-1">{part}</div>
+      return <div key={idx} className="font-bold mt-3 mb-2 text-sm">{part}</div>
     }
 
-    // Split by newlines and check for bullet points
-    const lines = part.split('\n').filter(line => line.trim())
+    // Split by newlines and filter empty lines
+    const lines = part.split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0 && line !== '.')
     
+    if (lines.length === 0) return null
+
     return (
-      <div key={idx} className="space-y-1">
+      <div key={idx} className="space-y-1.5">
         {lines.map((line, lineIdx) => {
-          // Check if line starts with bullet point
-          if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().match(/^\d+\./)) {
+          // Skip lines that are just punctuation or colons
+          if (line === ':' || line === '.' || line === '-') return null
+
+          // Remove leading colons and clean up
+          const cleanedLine = line.replace(/^:\s*/, '').trim()
+          
+          // Check if line starts with bullet point or numbered list
+          if (cleanedLine.match(/^[•\-*]\s+/) || cleanedLine.match(/^\d+\.\s+/)) {
+            const bulletText = cleanedLine.replace(/^[•\-*\d.]\s+/, '')
             return (
-              <div key={lineIdx} className="pl-3 flex gap-2">
-                <span className="text-[#00ffcc] flex-shrink-0">▸</span>
-                <span>{line.replace(/^[•\-\d.]\s*/, '')}</span>
+              <div key={lineIdx} className="flex gap-2 text-sm">
+                <span className="text-[#00ffcc] flex-shrink-0 font-bold">•</span>
+                <span>{bulletText}</span>
               </div>
             )
           }
           
-          return <div key={lineIdx}>{line}</div>
+          // Regular paragraph text
+          return <div key={lineIdx} className="text-sm leading-relaxed">{cleanedLine}</div>
         })}
       </div>
     )
   })
 
-  return <div className="space-y-2">{sections}</div>
+  return <div className="space-y-2 text-sm">{sections.filter(Boolean)}</div>
 }
 
 export function AIAssistant() {
