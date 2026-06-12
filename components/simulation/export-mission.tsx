@@ -79,6 +79,12 @@ export function ExportMission({ result, params, destinationPlanet }: ExportMissi
     try {
       if (!result) return
 
+      const avgAcceleration = result.apogeeTime > 0 
+        ? result.maxVelocity / result.apogeeTime 
+        : (result.states.length > 1 
+            ? result.states.reduce((sum, state) => sum + state.acceleration, 0) / result.states.length 
+            : 0)
+      
       const report = `
 ╔════════════════════════════════════════════════════════════════╗
 ║           OZONE LABS - MISSION REPORT                         ║
@@ -110,7 +116,7 @@ TRAJECTORY ANALYSIS
 ─────────────────────────────────────────────────────────────────
 Thrust-to-Weight Ratio  : ${(params.thrust / ((params.mass + params.fuelMass) * 9.81)).toFixed(2)}
 Fuel Efficiency         : ${((result.maxHeight / params.fuelMass) * 100).toFixed(2)} m per kg
-Average Acceleration    : ${(result.maxVelocity / result.apogeeTime).toFixed(2)} m/s²
+Average Acceleration    : ${avgAcceleration.toFixed(2)} m/s²
 
 NOTES
 ─────────────────────────────────────────────────────────────────
