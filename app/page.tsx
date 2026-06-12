@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { useRocketSimulation } from "@/hooks/use-rocket-simulation"
 import { useMobileView } from "@/lib/mobile-context"
 import { calculateHohmannTransfer } from "@/lib/rocket-physics"
+import { saveMission } from "@/app/actions/missions"
 import { ControlPanel } from "@/components/simulation/control-panel"
 import { TrajectoryChart, VelocityChart, ForcesChart } from "@/components/simulation/trajectory-chart"
 import { TelemetryDisplay } from "@/components/simulation/telemetry-display"
@@ -21,7 +23,7 @@ import { CustomObjectives } from "@/components/custom-objectives"
 import { RocketGallery } from "@/components/rocket-gallery"
 import { AIAssistant } from "@/components/ai-assistant"
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
-import { Rocket, Radio, Clock, Shield, Smartphone, Monitor } from "lucide-react"
+import { Rocket, Radio, Clock, Shield, Smartphone, Monitor, History, Save } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FunFactsBanner } from "@/components/fun-facts-banner"
 import { LoginPage } from "@/components/login-page"
@@ -91,6 +93,40 @@ export default function RocketSimulator() {
     setIsAuthenticated(false)
     setCurrentUser(null)
     localStorage.removeItem("rocketSimUser")
+  }
+
+  const handleSaveMission = async () => {
+    if (!result || !currentState) {
+      alert('No mission data to save')
+      return
+    }
+    
+    try {
+      // Get the current hohmann data based on destination planet
+      const destOrbit = planetOrbits[destinationPlanet] || 12.0
+      const earthOrbit = 10.0
+      const earthOrbitAU = earthOrbit * 1.496e11
+      const destOrbitAU = destOrbit * 1.496e11
+      const hohmannData = calculateHohmannTransfer(earthOrbitAU, destOrbitAU)
+      
+      await saveMission({
+        departurePlanet: 'Earth',
+        targetPlanet: destinationPlanet,
+        transferTime: hohmannData.transferTime,
+        transferTimeDays: hohmannData.transferTimeDays,
+        deltaV: hohmannData.deltaV,
+        departureVelocity: hohmannData.departureVelocity,
+        arrivalVelocity: hohmannData.arrivalVelocity,
+        fuelUsed: params.fuelMass - currentState.fuelRemaining,
+        fuelInitial: params.fuelMass,
+        rocketPreset: selectedPreset,
+        status: 'landed',
+      })
+      alert('Mission saved successfully!')
+    } catch (error) {
+      console.error('Failed to save mission:', error)
+      alert('Failed to save mission')
+    }
   }
 
   // Update time only on client to avoid hydration mismatch
@@ -217,14 +253,34 @@ export default function RocketSimulator() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground font-mono text-xs border-l border-border/50 pl-4">
-                  <div className="flex flex-col items-end">
+                  <div className="flex flex-col items-end gap-2">
                     <span className="text-foreground text-[9px] tracking-wider">Email: <span className="text-primary">{currentUser}</span></span>
-                    <button
-                      onClick={handleLogout}
-                      className="text-[9px] text-primary hover:text-primary/70 transition-colors uppercase tracking-wider"
-                    >
-                      Logout
-                    </button>
+                    <div className="flex gap-2">
+                      {isAuthenticated && result && (
+                        <button
+                          onClick={handleSaveMission}
+                          className="text-[9px] text-primary hover:text-primary/70 transition-colors uppercase tracking-wider flex items-center gap-1"
+                        >
+                          <Save className="h-3 w-3" />
+                          Save
+                        </button>
+                      )}
+                      {isAuthenticated && (
+                        <a
+                          href="/missions"
+                          className="text-[9px] text-primary hover:text-primary/70 transition-colors uppercase tracking-wider flex items-center gap-1"
+                        >
+                          <History className="h-3 w-3" />
+                          History
+                        </a>
+                      )}
+                      <button
+                        onClick={handleLogout}
+                        className="text-[9px] text-primary hover:text-primary/70 transition-colors uppercase tracking-wider"
+                      >
+                        Logout
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
