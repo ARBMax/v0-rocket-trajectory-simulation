@@ -12,6 +12,40 @@ interface Message {
   content: string
 }
 
+// Format assistant messages with better spacing and structure
+function FormattedMessage({ content }: { content: string }) {
+  // Split by double asterisks for section headers
+  const sections = content.split(/\*\*/).map((part, idx) => {
+    // Even indices are normal text, odd are headers
+    if (idx % 2 === 1) {
+      return <div key={idx} className="font-bold mt-2 mb-1">{part}</div>
+    }
+
+    // Split by newlines and check for bullet points
+    const lines = part.split('\n').filter(line => line.trim())
+    
+    return (
+      <div key={idx} className="space-y-1">
+        {lines.map((line, lineIdx) => {
+          // Check if line starts with bullet point
+          if (line.trim().startsWith('•') || line.trim().startsWith('-') || line.trim().match(/^\d+\./)) {
+            return (
+              <div key={lineIdx} className="pl-3 flex gap-2">
+                <span className="text-[#00ffcc] flex-shrink-0">▸</span>
+                <span>{line.replace(/^[•\-\d.]\s*/, '')}</span>
+              </div>
+            )
+          }
+          
+          return <div key={lineIdx}>{line}</div>
+        })}
+      </div>
+    )
+  })
+
+  return <div className="space-y-2">{sections}</div>
+}
+
 export function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState('')
@@ -190,13 +224,17 @@ export function AIAssistant() {
                       }`}
                     >
                       <div
-                        className={`max-w-xs rounded-lg px-3 py-2 text-sm break-words ${
+                        className={`max-w-xs rounded-lg px-4 py-3 text-sm break-words leading-relaxed ${
                           message.role === 'user'
                             ? 'bg-[#00ffcc] text-black rounded-br-none'
                             : 'bg-muted text-foreground rounded-bl-none'
                         }`}
                       >
-                        {message.content}
+                        {message.role === 'assistant' ? (
+                          <FormattedMessage content={message.content} />
+                        ) : (
+                          message.content
+                        )}
                       </div>
                     </div>
                   ))}
