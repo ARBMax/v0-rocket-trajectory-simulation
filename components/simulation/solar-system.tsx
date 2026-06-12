@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useMemo } from "react"
+import { useRef, useState, useMemo, useEffect, useCallback } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
 import { OrbitControls, Stars, Text, Html } from "@react-three/drei"
 import * as THREE from "three"
@@ -21,20 +21,31 @@ export const PLANETS = [
 
 const EARTH_ORBIT = EARTH.orbitRadius
 
-// ─── Earth (fixed departure) ──────────────────────────────────────────────────
-function EarthDeparture() {
+// ─── Earth (orbiting departure) ─────────────────────────────────────────────────
+function EarthDeparture({ playbackSpeed = 1, onAngleUpdate }: { playbackSpeed: number; onAngleUpdate?: (angle: number) => void }) {
   const meshRef  = useRef<THREE.Mesh>(null)
+  const groupRef = useRef<THREE.Group>(null)
+  const angleRef = useRef(0) // Start at angle 0 (right side of orbit)
 
   useFrame((_, delta) => {
-    if (meshRef.current) meshRef.current.rotation.y += delta * 0.5
+    // Earth orbits around the sun
+    angleRef.current += EARTH.speed * delta * 0.5 * playbackSpeed
+    
+    if (groupRef.current) {
+      groupRef.current.position.x = Math.cos(angleRef.current) * EARTH.orbitRadius
+      groupRef.current.position.z = Math.sin(angleRef.current) * EARTH.orbitRadius
+    }
+    
+    if (meshRef.current) {
+      meshRef.current.rotation.y += delta * 0.5 * playbackSpeed
+    }
+
+    // Report current angle to parent
+    if (onAngleUpdate) onAngleUpdate(angleRef.current)
   })
 
-  // Fixed position at angle 0 on Earth's orbit
-  const earthX = EARTH.orbitRadius
-  const earthZ = 0
-
   return (
-    <group position={[earthX, 0, earthZ]}>
+    <group ref={groupRef}>
       {/* Departure glow ring */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[EARTH.radius + 0.15, EARTH.radius + 0.28, 32]} />
@@ -86,33 +97,48 @@ function RocketPath({
   destinationOrbit,
   progress,           // 0..1 how far along the journey
   active,
+  earthAngleRef,
 }: {
   destinationOrbit: number
   progress: number
   active: boolean
+  earthAngleRef: React.MutableRefObject<number>
 }) {
-  // Build a smooth arc from Earth position (9,0) to destination position
-  // using a half-ellipse (Hohmann transfer approximation) in the XZ plane
+  // Build a smooth arc from Earth position to destination position
+  // using a proper Hohmann transfer ellipse in the XZ plane
   const { arcPoints, travelledPoints } = useMemo(() => {
     const startR = EARTH_ORBIT
     const endR   = destinationOrbit
+    // For a Hohmann transfer ellipse:
+    // - semiMajor = (r_departure + r_arrival) / 2
+    // - semiMinor = sqrt(r_departure * r_arrival)
+    // This is the geometric mean, which gives an accurate ellipse
     const semiMajor = (startR + endR) / 2
-    const semiMinor = Math.sqrt(startR * endR) * 0.85 // slight squash for visual appeal
+    const semiMinor = Math.sqrt(startR * endR)
 
     const N = 120
     const arc: THREE.Vector3[] = []
+    
+    // Get Earth's current orbital angle to rotate the arc
+    const earthAngle = earthAngleRef.current
+    
     for (let i = 0; i <= N; i++) {
       // angle from 0 (Earth side) to PI (destination side)
       const t = (i / N) * Math.PI
       const x = Math.cos(t) * semiMajor
       const z = Math.sin(t) * semiMinor
-      arc.push(new THREE.Vector3(x, 0.08, z))
+      
+      // Rotate the arc to align with Earth's current orbital position
+      const rotatedX = Math.cos(earthAngle) * x - Math.sin(earthAngle) * z
+      const rotatedZ = Math.sin(earthAngle) * x + Math.cos(earthAngle) * z
+      
+      arc.push(new THREE.Vector3(rotatedX, 0.08, rotatedZ))
     }
     // Travelled portion
     const cutoff = Math.round(progress * N)
     const travelled = arc.slice(0, cutoff + 1)
     return { arcPoints: arc, travelledPoints: travelled }
-  }, [destinationOrbit, progress])
+  }, [destinationOrbit, progress, earthAngleRef.current])
 
   const fullGeo     = useMemo(() => new THREE.BufferGeometry().setFromPoints(arcPoints),     [arcPoints])
   const travelledGeo = useMemo(() => new THREE.BufferGeometry().setFromPoints(travelledPoints), [travelledPoints])
@@ -140,95 +166,156 @@ function RocketDot({
   destinationOrbit,
   progress,
   active,
-  planetOrbitAngle,
+  planetAngleRef,
+  earthAngleRef,
+  onActualPhaseChange,
 }: {
   destinationOrbit: number
   progress: number
   active: boolean
-  planetOrbitAngle?: number
+  planetAngleRef: React.MutableRefObject<number>
+  earthAngleRef: React.MutableRefObject<number>
+  onActualPhaseChange?: (phase: number) => void
 }) {
   const meshRef = useRef<THREE.Mesh>(null)
   const glowRef = useRef<THREE.Mesh>(null)
+  const groupRef = useRef<THREE.Group>(null)
+  const rocketPhaseRef = useRef<number>(0)
+  const hasLaunchedRef = useRef<boolean>(false)
+  const launchProgressRef = useRef<number>(0)
+  const hasLandedRef = useRef<boolean>(false)
 
   const startR   = EARTH_ORBIT
   const endR     = destinationOrbit
   const semiMajor = (startR + endR) / 2
-  const semiMinor = Math.sqrt(startR * endR) * 0.85
+  const semiMinor = Math.sqrt(startR * endR) // Proper Hohmann ellipse (geometric mean)
+  const LANDING_DISTANCE = 0.5 // How close to planet before landing (in simulation units)
 
-  // Calculate the Hohmann transfer angle based on orbital radii
-  // The angle at which the rocket reaches the destination orbit
-  // For a Hohmann transfer from r1 to r2, the true anomaly at arrival is determined by the ellipse geometry
-  const transferAngle = Math.acos((semiMajor * (1 - 1) - endR) / (semiMajor * (1 + 1) - endR)) * 2
-  
-  // For Hohmann transfer, the intercept angle is approximately at π (180°)
-  // but adjust slightly based on the orbital ratio to be more accurate
-  const interceptAngle = Math.PI
-  
-  // Planet's current angle
-  const currentPlanetAngle = planetOrbitAngle ?? 0
-  
-  // Calculate phase timing based on where planet needs to be
-  let waitPhase = 0
-  let rocketPhase = 0
-  
-  if (active) {
-    // Calculate how far the planet needs to travel to reach intercept angle
-    // Account for the fact that the planet needs to complete its orbit
-    const angularGap = (interceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
-    
-    // Normalize: the planet's orbital period relative to the transfer time
-    // Closer planets (smaller orbit) move faster
-    const planetPeriodRatio = Math.sqrt(Math.pow(destinationOrbit, 3) / Math.pow(EARTH_ORBIT, 3))
-    const transferPeriodRatio = 0.5 * (1 + Math.sqrt(Math.pow(semiMajor, 3)))
-    
-    // If planet is less than ~30 degrees away from intercept, we can launch
-    // Otherwise, we wait for it to get there
-    if (angularGap < 0.5 || angularGap > 5.78) {
-      // Planet is near intercept point, launch the rocket
-      waitPhase = 1
-      rocketPhase = progress
-    } else {
-      // Planet is far from intercept, wait for it
-      waitPhase = Math.min(1, progress * 2)
-      rocketPhase = Math.max(0, (progress - 0.5) * 2)
-    }
-  }
-
-  // Calculate rocket position
-  let x = 0, z = 0
-  
-  if (rocketPhase > 0) {
-    // Rocket is traveling along the Hohmann transfer arc
-    const arcAngle = rocketPhase * Math.PI
-    x = Math.cos(arcAngle) * semiMajor
-    z = Math.sin(arcAngle) * semiMinor
-
-    // At the final approach, smoothly transition to planet's orbital position
-    if (rocketPhase > 0.85 && planetOrbitAngle !== undefined) {
-      const approachFactor = (rocketPhase - 0.85) / 0.15
-      const destX = Math.cos(planetOrbitAngle) * destinationOrbit
-      const destZ = Math.sin(planetOrbitAngle) * destinationOrbit
-      x = x + (destX - x) * approachFactor
-      z = z + (destZ - z) * approachFactor
-    }
-  } else if (waitPhase > 0) {
-    // Rocket is waiting at Earth orbit
-    // Show a pulsing indicator at the launch point
-    x = EARTH_ORBIT * Math.cos(0)
-    z = EARTH_ORBIT * Math.sin(0)
-  }
-
+  // useFrame runs every frame - check planet angle and update rocket position here
   useFrame(({ clock }) => {
+    if (!groupRef.current) return
+    
+    // Glow pulsing animation
     if (glowRef.current) {
       const s = 1 + 0.3 * Math.sin(clock.getElapsedTime() * 4)
       glowRef.current.scale.setScalar(s)
     }
+
+    // SINGLE SOURCE OF TRUTH: Calculate rocketPhase based on planet position
+    // Rocket waits at Earth until the planet reaches the correct intercept angle
+    let newRocketPhase = 0
+    
+    if (active && progress > 0) {
+      // For Hohmann transfer, the intercept angle is at π (180°)
+      const targetInterceptAngle = Math.PI
+      
+      // Calculate angular gap from current planet position to intercept
+      const currentPlanetAngle = planetAngleRef.current
+      
+      // Normalize the angle difference to [0, 2π)
+      let angularGap = (targetInterceptAngle - currentPlanetAngle + Math.PI * 2) % (Math.PI * 2)
+      
+      // Shortest distance (could be forward or backward around the circle)
+      if (angularGap > Math.PI) {
+        angularGap = Math.PI * 2 - angularGap
+      }
+      
+      // Launch window: planet must be within ~10 degrees of intercept (0.175 radians)
+      // This is a tight tolerance for precise launch timing
+      const launchWindowSize = 0.175
+      const isInLaunchWindow = angularGap < launchWindowSize
+      
+      // First time entering launch window: capture progress and mark as launched
+      if (isInLaunchWindow && !hasLaunchedRef.current) {
+        hasLaunchedRef.current = true
+        launchProgressRef.current = progress
+      }
+      
+      // If rocket has launched, use the progress from launch moment to current
+      // This ensures smooth motion from the exact launch point onwards
+      if (hasLaunchedRef.current) {
+        newRocketPhase = progress - launchProgressRef.current
+      }
+      // else: rocket stays in waiting state (newRocketPhase = 0)
+    } else {
+      // Simulation ended or not active - reset launch state
+      hasLaunchedRef.current = false
+      launchProgressRef.current = 0
+      newRocketPhase = 0
+    }
+
+    // Notify parent if phase changed
+    if (rocketPhaseRef.current !== newRocketPhase) {
+      rocketPhaseRef.current = newRocketPhase
+      onActualPhaseChange?.(newRocketPhase)
+    }
+
+    // Calculate rocket position based on phase
+    // Get Earth's current position on its orbit
+    const earthX = Math.cos(earthAngleRef.current) * EARTH_ORBIT
+    const earthZ = Math.sin(earthAngleRef.current) * EARTH_ORBIT
+    
+    // Get destination planet's current position
+    const planetX = Math.cos(planetAngleRef.current) * destinationOrbit
+    const planetZ = Math.sin(planetAngleRef.current) * destinationOrbit
+    
+    let x = earthX  // Default: Earth's actual orbital position
+    let z = earthZ
+    let hasLanded = false
+    
+    if (newRocketPhase > 0) {
+      // Rocket is traveling along the Hohmann transfer arc starting from Earth's current position
+      const arcAngle = newRocketPhase * Math.PI
+      
+      // Calculate position relative to Earth's departure point
+      const arcX = Math.cos(arcAngle) * semiMajor
+      const arcZ = Math.sin(arcAngle) * semiMinor
+      
+      // Rotate the arc to start from Earth's current angle
+      const earthAngle = earthAngleRef.current
+      const rotatedX = Math.cos(earthAngle) * arcX - Math.sin(earthAngle) * arcZ
+      const rotatedZ = Math.sin(earthAngle) * arcX + Math.cos(earthAngle) * arcZ
+      
+      x = rotatedX
+      z = rotatedZ
+
+      // At the final approach, smoothly transition to planet's orbital position
+      if (newRocketPhase > 0.85) {
+        const approachFactor = (newRocketPhase - 0.85) / 0.15
+        const destX = Math.cos(planetAngleRef.current) * destinationOrbit
+        const destZ = Math.sin(planetAngleRef.current) * destinationOrbit
+        x = x + (destX - x) * approachFactor
+        z = z + (destZ - z) * approachFactor
+        
+        // Check landing: if rocket is very close to destination planet
+        const distToPlanet = Math.sqrt((x - planetX) ** 2 + (z - planetZ) ** 2)
+        if (distToPlanet < LANDING_DISTANCE) {
+          hasLanded = true
+          hasLandedRef.current = true
+          // Snap to exact planet position
+          x = planetX
+          z = planetZ
+        }
+      }
+    }
+
+    // Update position - this happens every frame, ensuring smooth continuous motion
+    groupRef.current.position.set(x, 0.08, z)
   })
+
+  // Notify parent on mount with initial state (waiting)
+  useEffect(() => {
+    onActualPhaseChange?.(0)
+  }, [])
 
   if (!active) return null
 
+  // Initial position at Earth's current location (will be updated by useFrame)
+  const earthX = Math.cos(earthAngleRef.current) * EARTH_ORBIT
+  const earthZ = Math.sin(earthAngleRef.current) * EARTH_ORBIT
+  
   return (
-    <group position={[x, 0.08, z]}>
+    <group ref={groupRef} position={[earthX, 0.08, earthZ]}>
       {/* Outer glow */}
       <mesh ref={glowRef}>
         <sphereGeometry args={[0.22, 16, 16]} />
@@ -243,7 +330,7 @@ function RocketDot({
       <Html position={[0, 0.45, 0]} center style={{ pointerEvents: "none" }}>
         <div className="font-mono text-[9px] uppercase tracking-widest text-primary whitespace-nowrap
                         border border-primary/50 bg-background/80 px-1.5 py-0.5 rounded">
-          {rocketPhase > 0 ? `Rocket — ${Math.round(rocketPhase * 100)}%` : `Waiting for intercept — ${Math.round(progress * 100)}%`}
+          {hasLandedRef.current ? `Rocket — Landed` : rocketPhaseRef.current > 0 ? `Rocket — ${Math.round(rocketPhaseRef.current * 100)}%` : `Waiting for intercept`}
         </div>
       </Html>
     </group>
@@ -276,7 +363,10 @@ function Planet({
       groupRef.current.position.z = Math.sin(angleRef.current) * data.orbitRadius
       if (onAngleUpdate) onAngleUpdate(angleRef.current)
     }
-    if (meshRef.current) meshRef.current.rotation.y += delta * 0.4 * playbackSpeed
+    if (meshRef.current) {
+      // Rotate planet on its axis - increased speed to 1.0 for better visibility
+      meshRef.current.rotation.y += delta * 1.0 * playbackSpeed
+    }
   })
 
   return (
@@ -352,15 +442,33 @@ function Scene({
   onSelectPlanet,
   rocketProgress,
   playbackSpeed = 1,
+  hasResult = false,
+  onActualPhaseChange,
+  planetAngleRef,
+  earthAngleRef,
 }: {
   destinationPlanet: string
   onSelectPlanet: (name: string) => void
   rocketProgress: number
   playbackSpeed: number
+  hasResult?: boolean
+  onActualPhaseChange?: (phase: number) => void
+  planetAngleRef: React.MutableRefObject<number>
+  earthAngleRef: React.MutableRefObject<number>
 }) {
   const destData = PLANETS.find(p => p.name === destinationPlanet) ?? PLANETS[3]
-  const hasJourney = rocketProgress > 0
-  const planetAngleRef = useRef(0)
+  // Show rocket if it's in flight (progress > 0) OR if a simulation is loaded but waiting (hasResult && progress === 0)
+  const hasJourney = rocketProgress > 0 || hasResult
+
+  // Memoize the onAngleUpdate callback so it doesn't create a new reference every render
+  const handleAngleUpdate = useCallback((angle: number) => {
+    planetAngleRef.current = angle
+  }, [planetAngleRef])
+
+  // Memoize the Earth angle update callback
+  const handleEarthAngleUpdate = useCallback((angle: number) => {
+    earthAngleRef.current = angle
+  }, [earthAngleRef])
 
   return (
     <>
@@ -378,19 +486,22 @@ function Scene({
       ))}
 
       {/* Fixed Earth departure marker */}
-      <EarthDeparture />
+      <EarthDeparture playbackSpeed={playbackSpeed} onAngleUpdate={handleEarthAngleUpdate} />
 
       {/* Transfer arc + rocket dot */}
       <RocketPath
         destinationOrbit={destData.orbitRadius}
         progress={rocketProgress}
         active={hasJourney}
+        earthAngleRef={earthAngleRef}
       />
       <RocketDot
         destinationOrbit={destData.orbitRadius}
         progress={rocketProgress}
         active={hasJourney}
-        planetOrbitAngle={planetAngleRef.current}
+        planetAngleRef={planetAngleRef}
+        earthAngleRef={earthAngleRef}
+        onActualPhaseChange={onActualPhaseChange}
       />
 
       {/* Planets */}
@@ -401,7 +512,7 @@ function Scene({
           isDestination={destinationPlanet === p.name}
           onClick={() => onSelectPlanet(p.name)}
           playbackSpeed={playbackSpeed}
-          onAngleUpdate={destinationPlanet === p.name ? (angle) => (planetAngleRef.current = angle) : undefined}
+          onAngleUpdate={destinationPlanet === p.name ? handleAngleUpdate : undefined}
         />
       ))}
 
@@ -416,13 +527,22 @@ interface SolarSystemProps {
   onSelectPlanet: (name: string) => void
   result?: SimulationResult | null
   currentState?: SimulationState | null
+  onActualPhaseChange?: (phase: number) => void
 }
 
-export function SolarSystem({ destinationPlanet, onSelectPlanet, result, currentState, playbackSpeed = 1 }: SolarSystemProps & { playbackSpeed?: number }) {
+export function SolarSystem({ destinationPlanet, onSelectPlanet, result, currentState, playbackSpeed = 1, onActualPhaseChange }: SolarSystemProps & { playbackSpeed?: number }) {
+  // Persistent refs that survive Scene re-renders
+  // Holds the destination planet's current orbital angle
+  const planetAngleRef = useRef(0)
+  // Holds Earth's current orbital angle
+  const earthAngleRef = useRef(0)
+  
   // Map simulation progress to journey fraction (0→1)
   // The rocket should travel the full arc to destination based on the flight phases
+  // However, we speed this up to show reasonable transit times visually
   const rocketProgress = useMemo(() => {
-    if (!result || !currentState) return 0
+    if (!result) return 0
+    if (!currentState) return 0 // In waiting state - still show rocket at position 0
     if (result.states.length < 2) return 0
     
     // Find current index in simulation states
@@ -430,15 +550,18 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
     if (currentIndex < 0) return 0
     
     // Normalize progress across entire simulation duration
-    // This maps the complete flight (launch → burnout → apogee → descent → landing)
-    // to the full Hohmann transfer arc from Earth to destination
     const totalStates = result.states.length - 1
     const normalizedProgress = currentIndex / totalStates
     
-    // Stretch the progress so the rocket actually reaches the destination
-    // The journey completes when normalizedProgress reaches 1.0
+    // Speed up the journey visually: the rocket reaches destination much faster than real Hohmann transfer
+    // In reality, Mars transfer takes ~9 months, but we show it completing by 1.0
+    // Map: simulation progress 0→1 becomes rocket journey 0→1 (instantaneous visual)
+    // This keeps the rocket moving during the entire simulation runtime
     return Math.min(1, normalizedProgress)
   }, [result, currentState])
+
+  // hasResult indicates if there's a simulation loaded (for display purposes)
+  const hasResult = !!result
 
   return (
     <div className="w-full h-full relative">
@@ -472,6 +595,10 @@ export function SolarSystem({ destinationPlanet, onSelectPlanet, result, current
           onSelectPlanet={onSelectPlanet}
           rocketProgress={rocketProgress}
           playbackSpeed={playbackSpeed}
+          hasResult={hasResult}
+          onActualPhaseChange={onActualPhaseChange}
+          planetAngleRef={planetAngleRef}
+          earthAngleRef={earthAngleRef}
         />
       </Canvas>
     </div>

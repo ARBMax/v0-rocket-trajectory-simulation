@@ -1,7 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { useRocketSimulation } from "@/hooks/use-rocket-simulation"
+import { useMobileView } from "@/lib/mobile-context"
+import { calculateHohmannTransfer } from "@/lib/rocket-physics"
+import { saveMission } from "@/app/actions/missions"
 import { ControlPanel } from "@/components/simulation/control-panel"
 import { TrajectoryChart, VelocityChart, ForcesChart } from "@/components/simulation/trajectory-chart"
 import { TelemetryDisplay } from "@/components/simulation/telemetry-display"
@@ -17,8 +21,9 @@ import { MissionIndicator } from "@/components/mission-indicator"
 import { KeyboardHints } from "@/components/keyboard-hints"
 import { CustomObjectives } from "@/components/custom-objectives"
 import { RocketGallery } from "@/components/rocket-gallery"
+import { AIAssistant } from "@/components/ai-assistant"
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts"
-import { Rocket, Radio, Clock, Shield } from "lucide-react"
+import { Rocket, Radio, Clock, Shield, Smartphone, Monitor, History, Save } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FunFactsBanner } from "@/components/fun-facts-banner"
 import { LoginPage } from "@/components/login-page"
@@ -29,9 +34,34 @@ export default function RocketSimulator() {
   const [showSplash, setShowSplash] = useState(true)
   const [contentVisible, setContentVisible] = useState(false)
   const [destinationPlanet, setDestinationPlanet] = useState("Mars")
+  const [actualRocketPhase, setActualRocketPhase] = useState(0)
   const [currentTime, setCurrentTime] = useState("--:--:--")
   const [currentDate, setCurrentDate] = useState("--- -- ----")
   const [timezone, setTimezone] = useState("UTC")
+  const { isMobileFormat, toggleMobileFormat } = useMobileView()
+
+  // Planet orbital data (AU converted to simulation units, with AU = 10)
+  const planetOrbits: Record<string, number> = {
+    Mercury: 4.5,   // 0.39 AU
+    Venus: 6.5,     // 0.72 AU
+    Mars: 12.0,     // 1.52 AU
+    Jupiter: 17.0,  // 5.20 AU
+    Saturn: 22.0,   // 9.54 AU
+    Uranus: 27.0,   // 19.19 AU
+    Neptune: 31.0,  // 30.07 AU
+  }
+
+  // Calculate Hohmann transfer data based on destination planet
+  const hohmannData = useMemo(() => {
+    const destOrbit = planetOrbits[destinationPlanet] || 12.0
+    const earthOrbit = 10.0 // 1 AU in simulation units
+    
+    // Scale orbital distances from simulation units to AU (1 simulation unit = 0.1 AU)
+    const earthOrbitAU = earthOrbit * 1.496e11 // meters (1 AU = 1.496e11 m)
+    const destOrbitAU = destOrbit * 1.496e11
+    
+    return calculateHohmannTransfer(earthOrbitAU, destOrbitAU)
+  }, [destinationPlanet])
 
   // Check if user is already logged in (from localStorage)
   useEffect(() => {
@@ -65,6 +95,40 @@ export default function RocketSimulator() {
     localStorage.removeItem("rocketSimUser")
   }
 
+  const handleSaveMission = async () => {
+    if (!result || !currentState) {
+      alert('No mission data to save')
+      return
+    }
+    
+    try {
+      // Get the current hohmann data based on destination planet
+      const destOrbit = planetOrbits[destinationPlanet] || 12.0
+      const earthOrbit = 10.0
+      const earthOrbitAU = earthOrbit * 1.496e11
+      const destOrbitAU = destOrbit * 1.496e11
+      const hohmannData = calculateHohmannTransfer(earthOrbitAU, destOrbitAU)
+      
+      await saveMission({
+        departurePlanet: 'Earth',
+        targetPlanet: destinationPlanet,
+        transferTime: hohmannData.transferTime,
+        transferTimeDays: hohmannData.transferTimeDays,
+        deltaV: hohmannData.deltaV,
+        departureVelocity: hohmannData.departureVelocity,
+        arrivalVelocity: hohmannData.arrivalVelocity,
+        fuelUsed: params.fuelMass - currentState.fuelRemaining,
+        fuelInitial: params.fuelMass,
+        rocketPreset: selectedPreset,
+        status: 'landed',
+      })
+      alert('Mission saved successfully!')
+    } catch (error) {
+      console.error('Failed to save mission:', error)
+      alert('Failed to save mission')
+    }
+  }
+
   // Update time only on client to avoid hydration mismatch
   useEffect(() => {
     const updateTime = () => {
@@ -86,6 +150,7 @@ export default function RocketSimulator() {
     playbackSpeed,
     selectedPreset,
     theoretical,
+    rocketPhase,
     setPlaybackSpeed,
     togglePlayback,
     reset,
@@ -162,6 +227,23 @@ export default function RocketSimulator() {
                     Telemetry Active
                   </span>
                 </div>
+                <button
+                  onClick={toggleMobileFormat}
+                  className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors border-l border-border/50 pl-4"
+                  title={isMobileFormat ? "Switch to Desktop" : "Switch to Mobile"}
+                >
+                  {isMobileFormat ? (
+                    <>
+                      <Monitor className="h-3.5 w-3.5" />
+                      <span className="text-xs font-mono uppercase tracking-wider">Desktop</span>
+                    </>
+                  ) : (
+                    <>
+                      <Smartphone className="h-3.5 w-3.5" />
+                      <span className="text-xs font-mono uppercase tracking-wider">Mobile</span>
+                    </>
+                  )}
+                </button>
                 <div className="flex items-center gap-2 text-muted-foreground font-mono text-xs border-l border-border/50 pl-4">
                   <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
                   <div className="flex flex-col items-end">
@@ -171,14 +253,34 @@ export default function RocketSimulator() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground font-mono text-xs border-l border-border/50 pl-4">
-                  <div className="flex flex-col items-end">
+                  <div className="flex flex-col items-end gap-2">
                     <span className="text-foreground text-[9px] tracking-wider">Email: <span className="text-primary">{currentUser}</span></span>
-                    <button
-                      onClick={handleLogout}
-                      className="text-[9px] text-primary hover:text-primary/70 transition-colors uppercase tracking-wider"
-                    >
-                      Logout
-                    </button>
+                    <div className="flex gap-2">
+                      {isAuthenticated && result && (
+                        <button
+                          onClick={handleSaveMission}
+                          className="text-[9px] text-primary hover:text-primary/70 transition-colors uppercase tracking-wider flex items-center gap-1"
+                        >
+                          <Save className="h-3 w-3" />
+                          Save
+                        </button>
+                      )}
+                      {isAuthenticated && (
+                        <a
+                          href="/missions"
+                          className="text-[9px] text-primary hover:text-primary/70 transition-colors uppercase tracking-wider flex items-center gap-1"
+                        >
+                          <History className="h-3 w-3" />
+                          History
+                        </a>
+                      )}
+                      <button
+                        onClick={handleLogout}
+                        className="text-[9px] text-primary hover:text-primary/70 transition-colors uppercase tracking-wider"
+                      >
+                        Logout
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -209,10 +311,10 @@ export default function RocketSimulator() {
             <FunFactsBanner />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[340px,1fr] h-full">
+          <div className={isMobileFormat ? "flex flex-col gap-4" : "grid gap-4 lg:grid-cols-[340px,1fr]"} style={{ height: isMobileFormat ? 'auto' : '100%' }}>
             {/* Left Sidebar - Controls */}
             <aside
-              className={`space-y-4 transition-all duration-500 delay-100 ${
+              className={`${isMobileFormat ? "order-2" : ""} space-y-4 transition-all duration-500 delay-100 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
               }`}
             >
@@ -248,7 +350,7 @@ export default function RocketSimulator() {
               <CustomObjectives result={result} />
 
               {/* Physics Equations Display */}
-              <PhysicsEquationsPanel currentState={currentState} params={params} />
+              <PhysicsEquationsPanel currentState={actualRocketPhase === 0 ? null : currentState} params={params} />
 
               {/* Export Mission */}
               <ExportMission result={result} params={params} destinationPlanet={destinationPlanet} />
@@ -281,7 +383,7 @@ export default function RocketSimulator() {
 
             {/* Main Content Area */}
             <div
-              className={`space-y-4 transition-all duration-500 delay-200 ${
+              className={`${isMobileFormat ? "order-1" : ""} space-y-4 transition-all duration-500 delay-200 ${
                 contentVisible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
               }`}
             >
@@ -294,9 +396,11 @@ export default function RocketSimulator() {
 
               {/* Telemetry Display */}
               <TelemetryDisplay
-                currentState={currentState}
+                currentState={actualRocketPhase === 0 ? null : currentState}
                 result={result}
                 theoretical={theoretical}
+                rocketPhase={actualRocketPhase}
+                hohmannData={hohmannData}
               />
 
               {/* Section Label */}
@@ -337,7 +441,7 @@ export default function RocketSimulator() {
 
                 <TabsContent value="visual" className="mt-4 space-y-4">
                   <div className="h-[400px] rounded border border-border/50 overflow-hidden bg-card/30">
-                    <RocketVisual currentState={currentState} result={result} />
+                    <RocketVisual currentState={actualRocketPhase === 0 ? null : currentState} result={result} />
                   </div>
                   
                   <div>
@@ -354,6 +458,7 @@ export default function RocketSimulator() {
                         result={result}
                         currentState={currentState}
                         playbackSpeed={playbackSpeed}
+                        onActualPhaseChange={setActualRocketPhase}
                       />
                     </div>
                     <p className="mt-2 text-[10px] font-mono text-muted-foreground text-center uppercase tracking-widest">
@@ -423,8 +528,6 @@ export default function RocketSimulator() {
                 <span>Atmospheric Drag</span>
                 <span className="text-primary">|</span>
                 <span>Variable Mass</span>
-                <span className="text-primary">|</span>
-                <span className="text-primary/70">Optimized for PC use.</span>
               </div>
             </div>
           </div>
@@ -432,6 +535,9 @@ export default function RocketSimulator() {
 
         {/* Keyboard Shortcuts Overlay */}
         <KeyboardHints />
+
+        {/* AI Assistant Chat */}
+        <AIAssistant />
       </div>
     </div>
   )

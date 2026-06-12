@@ -32,60 +32,60 @@ export function PhysicsEquationsPanel({ currentState, params }: PhysicsEquations
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-primary" />
-          <CardTitle className="text-xs uppercase tracking-wider font-mono">Physics Equations</CardTitle>
+          <CardTitle className="text-sm uppercase tracking-wider font-mono">Physics Equations</CardTitle>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 text-[10px] font-mono">
+      <CardContent className="space-y-3 text-xs font-mono">
         {/* Newton's Second Law */}
         <div className="p-2 rounded bg-primary/5 border border-primary/20">
-          <div className="text-muted-foreground mb-1">Newton's Second Law (F = ma)</div>
-          <div className="text-foreground">
+          <div className="text-muted-foreground mb-1 text-xs">Newton's Second Law (F = ma)</div>
+          <div className="text-foreground text-sm">
             F<sub>net</sub> = <span className="text-primary">{netForce.toFixed(0)}</span> N = {rocketMass.toFixed(1)} kg × {acceleration.toFixed(2)} m/s²
           </div>
-          <div className="text-muted-foreground text-[9px] mt-1">
+          <div className="text-muted-foreground text-[11px] mt-1">
             where F<sub>net</sub> = F<sub>thrust</sub> - F<sub>gravity</sub> - F<sub>drag</sub>
           </div>
         </div>
 
         {/* Thrust Force */}
         <div className="p-2 rounded bg-blue-500/5 border border-blue-500/20">
-          <div className="text-muted-foreground mb-1">Thrust Force</div>
-          <div className="text-foreground">
+          <div className="text-muted-foreground mb-1 text-xs">Thrust Force</div>
+          <div className="text-foreground text-sm">
             F<sub>thrust</sub> = <span className="text-blue-400">{thrustForce.toFixed(0)}</span> N
           </div>
         </div>
 
         {/* Gravity Force */}
         <div className="p-2 rounded bg-red-500/5 border border-red-500/20">
-          <div className="text-muted-foreground mb-1">Gravitational Force (F = mg)</div>
-          <div className="text-foreground">
+          <div className="text-muted-foreground mb-1 text-xs">Gravitational Force (F = mg)</div>
+          <div className="text-foreground text-sm">
             F<sub>gravity</sub> = <span className="text-red-400">{gravityForce.toFixed(0)}</span> N = {rocketMass.toFixed(1)} × 9.81 m/s²
           </div>
         </div>
 
         {/* Drag Force */}
         <div className="p-2 rounded bg-orange-500/5 border border-orange-500/20">
-          <div className="text-muted-foreground mb-1">Drag Force (Cd = ½ρACₐv²)</div>
-          <div className="text-foreground">
+          <div className="text-muted-foreground mb-1 text-xs">Drag Force (Cd = ½ρACₐv²)</div>
+          <div className="text-foreground text-sm">
             F<sub>drag</sub> = <span className="text-orange-400">{dragForce.toFixed(1)}</span> N
           </div>
-          <div className="text-muted-foreground text-[9px] mt-1">
+          <div className="text-muted-foreground text-[11px] mt-1">
             ρ = {airDensity.toFixed(3)} kg/m³, v = {currentState.velocity.toFixed(1)} m/s
           </div>
         </div>
 
         {/* Thrust-to-Weight Ratio */}
         <div className="p-2 rounded bg-primary/5 border border-primary/20">
-          <div className="text-muted-foreground mb-1">Thrust-to-Weight Ratio</div>
-          <div className="text-foreground">
+          <div className="text-muted-foreground mb-1 text-xs">Thrust-to-Weight Ratio</div>
+          <div className="text-foreground text-sm">
             T/W = <span className="text-primary">{(thrustForce / gravityForce).toFixed(2)}</span> (should be &gt; 1 to launch)
           </div>
         </div>
 
         {/* Kinetic Energy */}
         <div className="p-2 rounded bg-yellow-500/5 border border-yellow-500/20">
-          <div className="text-muted-foreground mb-1">Kinetic Energy (E = ½mv²)</div>
-          <div className="text-foreground">
+          <div className="text-muted-foreground mb-1 text-xs">Kinetic Energy (E = ½mv²)</div>
+          <div className="text-foreground text-sm">
             E<sub>k</sub> = <span className="text-yellow-400">{(0.5 * rocketMass * Math.pow(currentState.velocity, 2)).toFixed(0)}</span> J
           </div>
         </div>

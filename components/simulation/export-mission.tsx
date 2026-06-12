@@ -79,6 +79,12 @@ export function ExportMission({ result, params, destinationPlanet }: ExportMissi
     try {
       if (!result) return
 
+      const avgAcceleration = result.apogeeTime > 0 
+        ? result.maxVelocity / result.apogeeTime 
+        : (result.states.length > 1 
+            ? result.states.reduce((sum, state) => sum + state.acceleration, 0) / result.states.length 
+            : 0)
+      
       const report = `
 ╔════════════════════════════════════════════════════════════════╗
 ║           OZONE LABS - MISSION REPORT                         ║
@@ -88,11 +94,11 @@ MISSION PARAMETERS
 ─────────────────────────────────────────────────────────────────
 Destination Planet       : ${destinationPlanet}
 Launch Date             : ${new Date().toLocaleDateString()}
-Rocket Mass             : ${params.rocketMass} kg
+Rocket Mass             : ${params.mass} kg
 Fuel Mass               : ${params.fuelMass} kg
-Total Mass              : ${params.rocketMass + params.fuelMass} kg
-Thrust Force            : ${params.thrustForce} N
-Fuel Burn Rate          : ${params.fuelBurnRate} kg/s
+Total Mass              : ${(params.mass + params.fuelMass).toFixed(2)} kg
+Thrust Force            : ${params.thrust} N
+Fuel Burn Rate          : ${params.burnRate} kg/s
 Drag Coefficient        : ${params.dragCoefficient}
 Cross-Sectional Area    : ${params.crossSectionalArea} m²
 
@@ -108,9 +114,9 @@ Simulation Points       : ${result.states.length}
 
 TRAJECTORY ANALYSIS
 ─────────────────────────────────────────────────────────────────
-Thrust-to-Weight Ratio  : ${(params.thrustForce / ((params.rocketMass + params.fuelMass) * 9.81)).toFixed(2)}
+Thrust-to-Weight Ratio  : ${(params.thrust / ((params.mass + params.fuelMass) * 9.81)).toFixed(2)}
 Fuel Efficiency         : ${((result.maxHeight / params.fuelMass) * 100).toFixed(2)} m per kg
-Average Acceleration    : ${(result.maxVelocity / result.apogeeTime).toFixed(2)} m/s²
+Average Acceleration    : ${avgAcceleration.toFixed(2)} m/s²
 
 NOTES
 ─────────────────────────────────────────────────────────────────

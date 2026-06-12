@@ -21,13 +21,30 @@ interface TelemetryDisplayProps {
     idealBurnoutVelocity: number
     burnTime: number
   }
+  rocketPhase?: number
+  hohmannData?: {
+    transferTime: number
+    transferTimeHours: number
+    transferTimeDays: number
+    semiMajorAxis: number
+    departureVelocity: number
+    arrivalVelocity: number
+    deltaV: number
+  }
 }
 
 export function TelemetryDisplay({
   currentState,
   result,
   theoretical,
+  rocketPhase = 0,
+  hohmannData,
 }: TelemetryDisplayProps) {
+  // Determine if we're moving based on currentState
+  // If currentState is null, the rocket is waiting (pre-launch)
+  // If currentState exists, the rocket is flying (post-launch) 
+  const isMoving = currentState !== null
+  const displayState = isMoving ? currentState : null
   const formatValue = (value: number, decimals: number = 2) => {
     if (Math.abs(value) >= 1000000) {
       return `${(value / 1000000).toFixed(decimals)}M`
@@ -72,67 +89,102 @@ export function TelemetryDisplay({
     {
       icon: ArrowUp,
       label: "ALT",
-      value: currentState ? formatValue(currentState.height, 1) : "0.0",
+      value: displayState ? formatValue(displayState.height, 1) : "0.0",
       unit: "m",
-      sub: result ? `MAX ${formatValue(result.maxHeight, 0)}m` : null,
+      sub: result && isMoving ? `MAX ${formatValue(result.maxHeight, 0)}m` : null,
     },
     {
       icon: Gauge,
       label: "VEL",
-      value: currentState ? formatValue(currentState.velocity, 1) : "0.0",
+      value: displayState ? formatValue(displayState.velocity, 1) : "0.0",
       unit: "m/s",
-      sub: result ? `MAX ${formatValue(result.maxVelocity, 0)} m/s` : null,
+      sub: result && isMoving ? `MAX ${formatValue(result.maxVelocity, 0)} m/s` : null,
     },
     {
       icon: TrendingUp,
       label: "ACC",
-      value: currentState ? formatValue(currentState.acceleration, 1) : "0.0",
+      value: displayState ? formatValue(displayState.acceleration, 1) : "0.0",
       unit: "m/s²",
-      sub: `G-FORCE ${currentState ? (currentState.acceleration / 9.81).toFixed(2) : "0.00"}`,
+      sub: `G-FORCE ${displayState ? (displayState.acceleration / 9.81).toFixed(2) : "0.00"}`,
     },
     {
       icon: Flame,
       label: "THR",
-      value: currentState ? formatValue(currentState.thrust, 0) : "0",
+      value: displayState ? formatValue(displayState.thrust, 0) : "0",
       unit: "N",
-      sub: currentState?.phase === "powered" ? "FIRING" : "OFFLINE",
-      subColor: currentState?.phase === "powered" ? "text-primary" : "text-muted-foreground",
+      sub: displayState?.phase === "powered" && isMoving ? "FIRING" : "OFFLINE",
+      subColor: displayState?.phase === "powered" && isMoving ? "text-primary" : "text-muted-foreground",
     },
     {
       icon: Fuel,
       label: "FUEL",
-      value: currentState ? formatValue(currentState.fuelRemaining, 2) : "0.00",
-      unit: "kg",
-      progress: currentState
-        ? (currentState.fuelRemaining / (result?.states[0]?.fuelRemaining ?? 1)) * 100
+      value: displayState 
+        ? `${((displayState.fuelRemaining / (result?.states[0]?.fuelRemaining ?? 1)) * 100).toFixed(0)}%`
+        : "100%",
+      unit: "",
+      progress: displayState
+        ? (displayState.fuelRemaining / (result?.states[0]?.fuelRemaining ?? 1)) * 100
         : 100,
+      sub: displayState ? formatValue(displayState.fuelRemaining, 1) : "0.0",
     },
     {
       icon: Target,
       label: "MASS",
-      value: currentState ? formatValue(currentState.mass, 2) : "0.00",
+      value: displayState ? formatValue(displayState.mass, 2) : "0.00",
       unit: "kg",
-      sub: `NET ${currentState ? formatValue(currentState.netForce, 0) : "0"}N`,
+      sub: `NET ${displayState ? formatValue(displayState.netForce, 0) : "0"}N`,
     },
     {
       icon: Timer,
       label: "T+",
-      value: currentState?.time.toFixed(2) ?? "0.00",
+      value: displayState?.time.toFixed(2) ?? "0.00",
       unit: "s",
-      sub: `BURN ${theoretical.burnTime.toFixed(1)}s`,
+      sub: isMoving ? `BURN ${theoretical.burnTime.toFixed(1)}s` : "STANDBY",
     },
     {
       icon: Activity,
       label: "PHASE",
-      value: currentState?.phase?.toUpperCase() ?? "READY",
+      value: !isMoving ? "READY" : displayState?.phase?.toUpperCase() ?? "READY",
       unit: "",
       isPhase: true,
     },
   ]
 
+  // Add transfer telemetry if Hohmann data is available
+  const transferMetrics = hohmannData ? [
+    {
+      icon: Timer,
+      label: "TRANSFER TIME",
+      value: hohmannData.transferTimeDays.toFixed(1),
+      unit: "days",
+      sub: `${hohmannData.transferTimeHours.toFixed(0)}h`,
+    },
+    {
+      icon: TrendingUp,
+      label: "DELTA-V",
+      value: hohmannData.deltaV.toFixed(1),
+      unit: "m/s",
+      sub: `Total burn ${(hohmannData.deltaV / 9.81).toFixed(1)}G·s`,
+    },
+    {
+      icon: Gauge,
+      label: "DEPARTURE VELOCITY",
+      value: hohmannData.departureVelocity.toFixed(1),
+      unit: "m/s",
+      sub: `Earth orbital`,
+    },
+    {
+      icon: Target,
+      label: "ARRIVAL VELOCITY",
+      value: hohmannData.arrivalVelocity.toFixed(1),
+      unit: "m/s",
+      sub: `Target orbital`,
+    },
+  ] : []
+
   return (
     <div className="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-8">
-      {metrics.map((metric, i) => (
+      {[...metrics, ...transferMetrics].map((metric, i) => (
         <div
           key={i}
           className="relative rounded border border-border/50 bg-card/50 backdrop-blur-sm p-3 group hover:border-primary/30 transition-colors"
